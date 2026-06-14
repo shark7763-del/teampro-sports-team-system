@@ -135,6 +135,41 @@ textarea{min-height:70px;resize:vertical;}
 .plan .role{font-size:13px;color:var(--muted);margin-bottom:8px;}
 .plan ul{margin:8px 0;padding-left:18px;font-size:13px;color:#334155;line-height:1.9;}
 
+/* landing 商業版區塊 */
+.hero-badge{display:inline-block;background:rgba(34,211,238,.15);color:var(--cyan);border:1px solid rgba(34,211,238,.4);
+  font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:14px;}
+.hero h1.pain{font-size:27px;line-height:1.35;font-weight:900;margin:6px 12px 12px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0 14px;}
+.who-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#dbe6ff;
+  font-size:13px;font-weight:700;padding:9px 14px;border-radius:30px;}
+.who-chip .e{margin-right:5px;}
+/* 戰情室預覽卡 */
+.war-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.war-card{background:#fff;border-radius:14px;padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.war-card .wt{font-size:12px;color:var(--muted);font-weight:600;}
+.war-card .wn{font-size:26px;font-weight:900;margin-top:4px;}
+.war-card .we{position:absolute;top:10px;right:12px;font-size:20px;opacity:.85;}
+.war-card.full{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;}
+.war-card.full .btn{width:auto;}
+.war-card.bl{border-left:5px solid var(--blue);}
+.war-card.gr{border-left:5px solid var(--green);}
+.war-card.rd{border-left:5px solid var(--red);}
+.war-card.yl{border-left:5px solid var(--yellow);}
+/* 家長安心中心展示 */
+.parent-demo{background:linear-gradient(135deg,#ffffff,#eef6ff);border-radius:16px;padding:18px;margin:12px 14px;box-shadow:var(--shadow);}
+.parent-demo .pline{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px;}
+.parent-demo .pline:last-child{border:none;}
+.parent-demo .pe{font-size:20px;width:26px;text-align:center;}
+/* why 區塊 */
+.why-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:14px;margin:9px 14px;color:#fff;}
+.why-card .we{font-size:26px;}
+.why-card .wtxt b{display:block;font-size:14px;color:#fff;}
+.why-card .wtxt span{font-size:12px;color:#9db4e8;}
+.cta-band{background:linear-gradient(135deg,var(--blue),var(--cyan));margin:18px 14px;border-radius:18px;padding:22px;text-align:center;color:#fff;}
+.cta-band h3{margin:0 0 4px;font-size:19px;}
+.cta-band p{margin:0 0 14px;font-size:13px;opacity:.92;}
+
 /* wizard */
 .steps{display:flex;gap:6px;padding:14px 16px;}
 .steps .dot{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.2);}
@@ -338,33 +373,76 @@ function render(page,arg){
   }
 }
 
-/* ---------------- 首頁 Landing ---------------- */
+/* ---------------- 首頁 Landing（商業版 SaaS）---------------- */
 function Landing(){
   return `
+  <!-- 第一屏：痛點式文案 -->
   <div class="hero">
-    <div class="logo">🏆</div>
-    <h1>TeamPro</h1>
-    <div class="subtitle">智慧運動團隊管理系統</div>
-    <div class="subtitle">專為台灣體育班、校隊、道館與運動俱樂部打造</div>
+    <div class="hero-badge">🏆 TeamPro 智慧運動團隊管理系統</div>
+    <h1 class="pain">教練不用再靠記憶<br>管理整支隊伍</h1>
+    <div class="desc" style="margin-top:4px">TeamPro 幫你自動整理學生出席、身體狀態、KPI 表現、飲食紀錄、紅黃綠燈與家長通知。</div>
     <div class="slogan">「讓每一次訓練，都留下成長的證據。」</div>
-    <div class="desc">每日回報 × 教練管理 × 家長回饋 × AI 分析<br>
-    不用再靠記憶管理整支隊伍，<br>讓數據幫教練看見問題，<br>讓回饋幫家長看見努力，<br>讓紀錄幫選手看見自己的進步。</div>
-    <div style="display:flex;flex-direction:column;gap:10px;padding:0 8px;">
-      <button class="btn green" onclick="go('wizard')">🚀 建立我的團隊</button>
-      <button class="btn ghost" onclick="go('login')">🔑 登入系統</button>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
+      <button class="btn green" onclick="go('wizard')">🚀 免費建立團隊</button>
+      <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
+      <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
   </div>
 
-  <div class="section-title">💎 四大核心價值</div>
-  <div class="value-card"><h3>📋 今日訓練</h3><p>每日打卡、KPI 評分、身體狀態、營養紀錄，建立每日成長軌跡。</p></div>
-  <div class="value-card"><h3>🎯 教練管理</h3><p>教練戰情室、學生名單、紅黃綠燈、家長通知，整支隊伍一目了然。</p></div>
-  <div class="value-card"><h3>📈 成長報告</h3><p>週報表、月報表、個人趨勢、本週之星，努力被看見。</p></div>
-  <div class="value-card"><h3>🤖 智慧分析</h3><p>AI 教練助理、賽前戰力檢查、關懷名單、資料匯出。</p></div>
+  <!-- 為誰打造 -->
+  <div class="section-title">🎯 為誰打造</div>
+  <div class="chip-row">
+    ${[['🏫','體育班'],['🏅','校隊'],['🥋','道館'],['⚽','運動俱樂部'],['🏋️','訓練中心'],['☀️','暑期營隊'],['🖤','黑帶培訓班']]
+      .map(w=>`<span class="who-chip"><span class="e">${w[0]}</span>${w[1]}</span>`).join('')}
+  </div>
 
+  <!-- 教練每天會看到什麼（戰情室卡片）-->
+  <div class="section-title">📊 教練每天會看到什麼</div>
+  <div class="card" style="padding:14px">
+    <div class="war-grid">
+      <div class="war-card bl"><span class="we">✅</span><div class="wt">今日回報人數</div><div class="wn" style="color:var(--blue)">18</div></div>
+      <div class="war-card gr"><span class="we">📝</span><div class="wt">今日未回報</div><div class="wn" style="color:var(--muted)">4</div></div>
+      <div class="war-card rd"><span class="we">🔴</span><div class="wt">今日紅燈提醒</div><div class="wn" style="color:var(--red)">2</div></div>
+      <div class="war-card yl"><span class="we">🩹</span><div class="wt">今日受傷提醒</div><div class="wn" style="color:var(--yellow)">1</div></div>
+      <div class="war-card gr"><span class="we">📈</span><div class="wt">本週進步最多</div><div class="wn" style="font-size:18px;color:var(--green)">林小明 +0.8</div></div>
+      <div class="war-card rd"><span class="we">❤️</span><div class="wt">本週需關懷</div><div class="wn" style="font-size:18px;color:var(--red)">3 位</div></div>
+      <div class="war-card full bl"><div><div class="wt">一鍵產生家長通知</div><div class="wn" style="font-size:16px">把今日狀態一次傳給家長</div></div>
+        <button class="btn green sm" onclick="go('wizard')">立即體驗 →</button></div>
+    </div>
+  </div>
+
+  <!-- 家長安心中心 -->
+  <div class="section-title">👪 家長安心中心</div>
+  <div class="parent-demo">
+    <p class="muted" style="margin:0 0 10px;line-height:1.7">讓家長知道孩子不是只有來上課，<br>而是<b style="color:var(--blue)">每天都有被追蹤、被提醒、被培養</b>。</p>
+    <div class="pline"><span class="pe">🟢</span><span><b>孩子今日狀態</b> · 出席正常，狀態良好</span></div>
+    <div class="pline"><span class="pe">⭐</span><span><b>本週努力亮點</b> · 專注力大幅提升</span></div>
+    <div class="pline"><span class="pe">📣</span><span><b>教練提醒</b> · 注意睡眠，補足水分</span></div>
+    <div class="pline"><span class="pe">🏠</span><span><b>回家建議</b> · 早點休息、均衡飲食</span></div>
+    <div class="pline"><span class="pe">📅</span><span><b>本週成長報告</b> · KPI 平均 4.1，綠燈 4 次</span></div>
+  </div>
+
+  <!-- 為什麼選 TeamPro -->
+  <div class="section-title">💪 為什麼選 TeamPro</div>
+  ${[['⚡','提升教練管理效率','整隊狀態一眼掌握，不再靠記憶'],
+     ['🎯','建立學生自律習慣','每天打卡，養成自我追蹤'],
+     ['🤝','增加家長信任','孩子被看見，續班率更高'],
+     ['🗂️','留下完整訓練紀錄','每一次努力都有資料佐證'],
+     ['🏫','幫助學校成果報告','數據化呈現，報告更有力']]
+    .map(w=>`<div class="why-card"><span class="we">${w[0]}</span><div class="wtxt"><b>${w[1]}</b><span>${w[2]}</span></div></div>`).join('')}
+
+  <!-- 方案 -->
   <div class="section-title">🏷️ 三種方案</div>
   ${PlanCard('start')}
   ${PlanCard('team')}
   ${PlanCard('pro')}
+
+  <!-- 結尾 CTA -->
+  <div class="cta-band">
+    <h3>讓每一次訓練，都留下成長的證據</h3>
+    <p>3 分鐘建立你的團隊，今天就開始用數據帶隊。</p>
+    <button class="btn" style="background:#fff;color:var(--blue)" onclick="go('wizard')">🚀 免費建立團隊</button>
+  </div>
   <div style="height:30px"></div>
   `;
 }
@@ -599,7 +677,7 @@ function Dashboard(){
     ['daily_checkin','📝','今日訓練打卡','每日出席、狀態、飲食'],
     ['kpi_score','⭐','選手成長指標','KPI 1～5 分評分'],
     ['body_status','💪','身體狀態追蹤','睡眠、疲勞、受傷'],
-    ['nutrition_record','🍱','營養狀態紀錄','三餐、水量、宵夜'],
+    ['nutrition_record','🍱','營養狀態追蹤','三餐、水量、宵夜'],
     ['line_copy','💬','一鍵 LINE 回報','教練/家長/選手版'],
   ])}
   ${FeatureSection('🎯 教練管理',[
@@ -711,17 +789,25 @@ function careListPreview(){
 function showUpgrade(key,name){
   const need=featurePermissions[key];
   showModal(`
-    <div class="center"><div style="font-size:40px">🔒</div><h2>此功能尚未解鎖</h2></div>
+    <div style="margin:-22px -22px 16px;padding:22px;background:linear-gradient(135deg,var(--navy2),var(--blue));border-radius:20px 20px 0 0;color:#fff;text-align:center">
+      <div style="font-size:40px">🔒</div>
+      <h2 style="color:#fff;margin:6px 0 2px">此功能尚未解鎖</h2>
+      <div style="font-size:13px;opacity:.9"><b>${name}</b> 屬於 ${PLAN_LIMITS[need].name} 功能</div>
+    </div>
     <div class="info-line"><span class="k">功能名稱</span><span class="v">${name}</span></div>
     <div class="info-line"><span class="k">目前方案</span><span class="v">${PLAN_LIMITS[currentPlan()].name}</span></div>
-    <div class="info-line"><span class="k">需要方案</span><span class="v">${PLAN_LIMITS[need].name}</span></div>
+    <div class="info-line"><span class="k">需要方案</span><span class="v" style="color:var(--blue)">${PLAN_LIMITS[need].name}</span></div>
     <div class="card" style="margin:14px 0;background:var(--card-soft)">
-      <b>💡 升級後價值</b><p class="muted" style="margin:6px 0 0">${UPGRADE_VALUE[key]||'升級後即可使用此功能。'}</p>
+      <b>🚀 升級後可以解決什麼問題</b>
+      <p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:#334155">${UPGRADE_VALUE[key]||'升級後即可使用此功能，讓你的隊伍管理更完整。'}</p>
     </div>
-    <p class="muted">建議升級方案：<b>${PLAN_LIMITS[need].name}（${PLAN_LIMITS[need].price}）</b></p>
+    <div class="cta-band" style="margin:0 0 14px;padding:16px">
+      <h3 style="font-size:16px">建議升級 ${PLAN_LIMITS[need].name}</h3>
+      <p style="margin:2px 0 0">${PLAN_LIMITS[need].price}</p>
+    </div>
     <div class="btn-row">
       <button class="btn gray" onclick="closeModal()">稍後再說</button>
-      <button class="btn green" onclick="closeModal();go('settings')">我想升級</button>
+      <button class="btn green" onclick="closeModal();go('settings')">我想升級 →</button>
     </div>`);
 }
 
