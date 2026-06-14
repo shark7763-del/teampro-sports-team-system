@@ -486,7 +486,7 @@ function Landing(){
     <div class="muted" style="color:#9fe7f5;font-size:13px;margin-bottom:4px">🎁 免費體驗 3 天，完成一次完整教練戰情室流程。</div>
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
       <button class="btn green" onclick="go('wizard')">🎁 免費體驗 3 天</button>
-      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 觀看系統展示</button>
+      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="landingLoadDemo()">📥 載入示範資料</button>
       <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
       <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
@@ -618,6 +618,16 @@ function viewDemo(){
   if(REPORTS.length===0){ seedDemoReports(); }
   toast('▶️ 已載入系統展示（Pro 全功能）');
   loginSuccess();
+}
+// 首頁直接載入示範資料：建立示範團隊(體驗中)＋10 位學生資料
+function landingLoadDemo(){
+  ACCOUNT=demoAccount();
+  ACCOUNT.plan='start';          // 以體驗版方案載入
+  ACCOUNT.teamName='示範校隊';
+  StorageAdapter.save(DB_KEYS.account,ACCOUNT);
+  startTrial();                  // 啟動 3 天體驗
+  StorageAdapter.save(DB_KEYS.session,true);
+  loadDemoTeam();                // 產生 10 人 × 3 天 + 家長通知範例（內含成功 Modal）
 }
 // 產生示範回報資料，讓戰情室/報告有內容
 function seedDemoReports(){
@@ -849,10 +859,10 @@ function Dashboard(){
   </div>
 
   ${TrialExpiredBanner()}
-  ${TrialProgressCard()}
-  ${FirstUseTasksCard()}
   ${CoachWarRoomCard()}
   ${TodayCoachFlow()}
+  ${TrialProgressCard()}
+  ${FirstUseTasksCard()}
 
   <div class="card">
     <div class="info-line"><span class="k">單位名稱</span><span class="v">${a.unitName}</span></div>
@@ -913,7 +923,7 @@ function TodayCoachFlow(){
     ['2','🚦','查看紅黃綠燈名單',`🟢${green} 🟡${yellow} 🔴${red}`,`go('coach')`],
     ['3','❤️','點選需關懷學生',`目前 ${care} 位需關懷`,`openCareFlow()`],
     ['4','📢','產生家長通知','一鍵複製給家長',`openParentNotice()`],
-    ['5','📤','匯出今日紀錄','下載 CSV 留存',`exportCSV()`]
+    ['5','📑','查看 3 日體驗報告','體驗成果＋省時估算',`openFeature('trial_report')`]
   ];
   return `<div class="section-title">🧭 今日教練流程</div>
   <div class="card" style="padding:10px">
@@ -1057,8 +1067,19 @@ function CoachWarRoomCard(){
       <button class="btn green sm" style="width:100%" onclick="showUpgrade('coach_dashboard','教練戰情室')">查看升級價值</button>
     </div>`;
   }
+  // 完全沒有資料 → 引導載入示範資料，不要空白
+  if(REPORTS.length===0){
+    return `<div class="section-title">🎯 今日教練戰情室</div>
+    <div class="card center">
+      <div style="font-size:40px">📭</div>
+      <p class="muted" style="line-height:1.7">目前尚未有今日回報資料。<br>你可以先載入示範資料，立即體驗教練戰情室效果。</p>
+      <button class="btn green" onclick="loadDemoTeam()">📥 載入示範資料</button>
+      <button class="btn outline" style="margin-top:8px" onclick="go('checkin')">📝 開始今日訓練打卡</button>
+    </div>`;
+  }
   const s=computeStats();
   const cares=careList();
+  const todayCares=cares.filter(c=>s.todayR.some(r=>r.studentName===c.name));
   const cells=[
     ['✅','今日回報',s.reported,'var(--blue)'],['📝','今日未回報',s.notReported,'var(--muted)'],
     ['🟢','綠燈',s.green,'var(--green)'],['🟡','黃燈',s.yellow,'var(--yellow)'],
@@ -1066,24 +1087,40 @@ function CoachWarRoomCard(){
     ['😴','睡眠不足',s.lowSleep,'var(--blue)'],['💧','水量不足',s.lowWater,'var(--blue)']
   ];
   return `<div class="section-title">🎯 今日教練戰情室</div>
+  <p class="muted" style="margin:-2px 14px 6px;line-height:1.6">不用一個一個問，<b style="color:var(--blue)">TeamPro 自動幫教練整理出今天最需要處理的人。</b></p>
   <div class="card" style="padding:12px">
     <div class="war-grid" style="grid-template-columns:1fr 1fr">
       ${cells.map(c=>`<div class="war-card"><span class="we">${c[0]}</span><div class="wt">${c[1]}</div><div class="wn" style="color:${c[3]}">${c[2]}</div></div>`).join('')}
     </div>
   </div>
   <div class="section-title" style="font-size:14px">❤️ 今日優先關心名單</div>
-  <p class="muted" style="margin:-2px 14px 6px;line-height:1.6">不用一個一個問，系統自動幫教練整理出今天最需要處理的人。</p>
   <div class="card">
-    ${cares.length? cares.slice(0,8).map((c,i)=>`<div class="care-row ${c.light==='yellow'?'yl':''}">
+    ${cares.length? `${cares.slice(0,8).map((c,i)=>`<div class="care-row ${c.light==='yellow'?'yl':''}">
       <div class="cr-top"><span class="cr-name">${i+1}. ${c.name} ${lightDot(c.light)}</span>
         <span class="tag ${c.light==='red'?'red':'yellow'}">${trafficText(c.light)}</span></div>
       <div class="cr-reason">原因：${c.reason}</div>
       <div class="btn-row">
         <button class="btn green sm" onclick="showParentNoticeModal('${c.reportId}')">📢 產生家長通知</button>
-        <button class="btn outline sm" onclick='copyParentNotice("${c.reportId}")'>📋 複製 LINE 文字</button>
+        <button class="btn outline sm" onclick="showRecordDetail('${c.reportId}')">📄 查看紀錄</button>
       </div>
-    </div>`).join('') : '<p class="muted center">目前沒有需要特別關心的學生 ✅<br>載入示範資料即可看到完整效果。</p>'}
+    </div>`).join('')}
+    ${(s.yellow+s.red)>0?`<button class="btn green" style="margin-top:10px" onclick="generateAllTodayNotices()">📲 一鍵產生今日家長通知（${s.yellow+s.red} 則）</button>`:''}`
+    : '<p class="muted center">目前沒有需要特別關心的學生 ✅<br>載入示範資料即可看到完整效果。</p>'}
   </div>`;
+}
+/* 一鍵產生今日所有黃／紅燈學生的家長通知 */
+function generateAllTodayNotices(){
+  const today=new Date().toISOString().slice(0,10);
+  const targets=REPORTS.filter(r=>r.date===today && (r.trafficLight==='yellow'||r.trafficLight==='red'));
+  if(targets.length===0){ toast('今日沒有黃／紅燈學生'); return; }
+  const blocks=targets.map(r=>buildParentNotice(r,reasonFor(r.reportId)));
+  targets.forEach(r=>recordNotice(r));
+  const allText=blocks.join('\n\n———————————\n\n');
+  showModal(`<h2>📲 今日家長通知（${targets.length} 則）</h2>
+    <p class="muted">已整理今日所有黃燈與紅燈學生，可一次複製或逐則複製。</p>
+    <button class="btn" onclick='copyText(document.getElementById("all-notice").textContent,"已複製 ${targets.length} 則家長通知，可以直接貼到 LINE。")'>📋 一次複製全部</button>
+    <div class="copybox" id="all-notice" style="margin-top:10px;max-height:320px;overflow:auto">${allText}</div>
+    <button class="btn outline" style="margin-top:10px" onclick="closeModal()">關閉</button>`);
 }
 
 /* ===== 載入示範校隊資料（10 位學生 × 最近 3 天）===== */
@@ -1127,8 +1164,15 @@ function loadDemoTeam(){
   // 附帶一則家長通知範例（讓示範一載入就有家長通知紀錄）
   const sample=careList()[0];
   if(sample){ const r=REPORTS.find(x=>x.reportId===sample.reportId); if(r) recordNotice(r); }
-  toast('✅ 已載入示範校隊（10 位學生 × 3 天 + 家長通知範例）');
   go('dashboard');
+  // 成功提示 Modal
+  showModal(`<div class="center"><div style="font-size:42px">🎉</div>
+    <h2>示範資料已建立完成！</h2></div>
+    <p class="muted" style="line-height:1.7">你現在可以查看今日教練戰情室、紅黃綠燈名單與一鍵家長通知。<br>
+    （10 位學生 × 最近 3 天，含綠/黃/紅燈、受傷、睡眠不足、水量不足與家長通知範例）</p>
+    <button class="btn green" onclick="closeModal();go('coach')">🎯 查看教練戰情室</button>
+    <button class="btn" style="margin-top:8px" onclick="closeModal();openParentNotice()">📢 產生家長通知</button>
+    <button class="btn outline" style="margin-top:8px" onclick="closeModal();openFeature('trial_report')">📑 查看 3 日體驗報告</button>`);
 }
 function changePlanAndExit(p){ ACCOUNT.plan=p; StorageAdapter.save(DB_KEYS.account,ACCOUNT); TRIAL=TRIAL?{...TRIAL,active:false}:TRIAL; if(TRIAL)StorageAdapter.save(DB_KEYS.trial,TRIAL); toast('已升級為 '+PLAN_LIMITS[p].name); go('dashboard'); }
 
@@ -1155,13 +1199,13 @@ function showParentNoticeModal(reportId){
   recordNotice(r);
   showModal(`<h2>📢 家長通知</h2><p class="muted">${r.studentName} · ${r.date} · ${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}</p>
     <div class="copybox" id="pn-text">${text}</div>
-    <button class="btn" onclick="copyText(document.getElementById('pn-text').textContent)">📋 複製到剪貼簿</button>
+    <button class="btn" onclick='copyText(document.getElementById("pn-text").textContent,"已複製家長通知，可以直接貼到 LINE。")'>📋 複製 LINE 文字</button>
     <button class="btn outline" style="margin-top:8px" onclick="closeModal()">關閉</button>`);
 }
 function copyParentNotice(reportId){
   const r=REPORTS.find(x=>x.reportId===reportId); if(!r){toast('找不到紀錄');return;}
   recordNotice(r);
-  copyText(buildParentNotice(r,reasonFor(reportId)));
+  copyText(buildParentNotice(r,reasonFor(reportId)),'已複製家長通知，可以直接貼到 LINE。');
 }
 function recordNotice(r){
   NOTICES.push({studentName:r.studentName,date:r.date,light:r.trafficLight,createdAt:new Date().toISOString()});
@@ -1481,13 +1525,14 @@ function showLineModal(r){
     <div style="height:14px"></div>
     <button class="btn" onclick="closeModal()">關閉</button>`);
 }
-function copyText(t){
-  navigator.clipboard?.writeText(t).then(()=>toast('📋 已複製到剪貼簿'),()=>fallbackCopy(t));
-  if(!navigator.clipboard) fallbackCopy(t);
+function copyText(t,msg){
+  const ok=msg||'📋 已複製到剪貼簿';
+  navigator.clipboard?.writeText(t).then(()=>toast(ok),()=>fallbackCopy(t,ok));
+  if(!navigator.clipboard) fallbackCopy(t,ok);
 }
-function fallbackCopy(t){
+function fallbackCopy(t,msg){
   const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);
-  ta.select();try{document.execCommand('copy');toast('📋 已複製');}catch(e){toast('複製失敗，請手動選取');}
+  ta.select();try{document.execCommand('copy');toast(msg||'📋 已複製');}catch(e){toast('複製失敗，請手動選取');}
   document.body.removeChild(ta);
 }
 
@@ -1613,6 +1658,7 @@ function TrialReportBlock(){
   const lowSleep=rs.filter(r=>r.sleepHours<6).length;
   const highFatigue=rs.filter(r=>r.fatigueLevel>=4).length;
   const injured=rs.filter(r=>r.injuryStatus==='是').length;
+  const lowWater=rs.filter(r=>waterMl(r.waterAmount)<1500).length;
   const noticeCount=NOTICES.length;
   const careCount=careList().length;
   // 平均回報率（以示範 10 人 × 3 天估算，或實際學生數）
@@ -1646,6 +1692,7 @@ function TrialReportBlock(){
     <div class="info-line"><span class="k">😴 睡眠不足次數</span><span class="v">${lowSleep}</span></div>
     <div class="info-line"><span class="k">😮‍💨 疲勞偏高次數</span><span class="v">${highFatigue}</span></div>
     <div class="info-line"><span class="k">🩹 受傷提醒次數</span><span class="v">${injured}</span></div>
+    <div class="info-line"><span class="k">💧 水量不足次數</span><span class="v">${lowWater}</span></div>
     <div class="info-line"><span class="k">📢 產生家長通知次數</span><span class="v">${noticeCount}</span></div>
     <div class="info-line"><span class="k">⭐ 最穩定學生</span><span class="v">${stable}</span></div>
     <div class="info-line"><span class="k">❤️ 最需要關懷學生</span><span class="v">${worst}</span></div>
