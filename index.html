@@ -486,7 +486,7 @@ function Landing(){
     <div class="muted" style="color:#9fe7f5;font-size:13px;margin-bottom:4px">🎁 免費體驗 3 天，完成一次完整教練戰情室流程。</div>
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
       <button class="btn green" onclick="go('wizard')">🎁 免費體驗 3 天</button>
-      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 查看系統展示</button>
+      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 觀看系統展示</button>
       <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
       <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
@@ -503,8 +503,8 @@ function Landing(){
     <h2 style="margin:0 0 4px;font-size:18px">3 天體驗，讓教練看見管理差異</h2>
     <p class="muted" style="margin:0 0 12px;line-height:1.6">不是單純免費試用，而是三天內完成一次完整的團隊管理流程。</p>
     ${[['Day 1','建立團隊，完成第一次回報','新增學生或載入示範資料，讓選手完成今日訓練打卡，系統自動產生 KPI 與紅黃綠燈。'],
-       ['Day 2','查看教練戰情室','教練一眼看到今日未回報、紅黃綠燈、受傷提醒、睡眠不足與需要關懷的學生。'],
-       ['Day 3','產生家長通知與 3 日報告','系統自動整理三天回報紀錄，產生家長通知與體驗成果報告。']]
+       ['Day 2','查看教練戰情室，產生家長通知','教練一眼看到今日未回報、紅黃綠燈、受傷提醒、睡眠不足與需要關懷的學生，並一鍵產生家長通知。'],
+       ['Day 3','產生 3 日體驗報告，看見管理成果','系統自動整理三天回報紀錄，產生家長通知與體驗成果報告。']]
       .map((d,i)=>`<div class="trial-day">
         <span class="td-badge">${i+1}</span>
         <div><b>${d[0]}：${d[1]}</b><p class="muted" style="margin:3px 0 0;font-size:12.5px;line-height:1.6">${d[2]}</p></div>
@@ -1124,7 +1124,10 @@ function loadDemoTeam(){
   REPORTS=data.concat(REPORTS);
   StorageAdapter.save(DB_KEYS.reports,REPORTS);
   if(TRIAL && !TRIAL.progress.day1){ setTrialProgress('day1'); }
-  toast('✅ 已載入示範校隊（10 位學生 × 3 天）');
+  // 附帶一則家長通知範例（讓示範一載入就有家長通知紀錄）
+  const sample=careList()[0];
+  if(sample){ const r=REPORTS.find(x=>x.reportId===sample.reportId); if(r) recordNotice(r); }
+  toast('✅ 已載入示範校隊（10 位學生 × 3 天 + 家長通知範例）');
   go('dashboard');
 }
 function changePlanAndExit(p){ ACCOUNT.plan=p; StorageAdapter.save(DB_KEYS.account,ACCOUNT); TRIAL=TRIAL?{...TRIAL,active:false}:TRIAL; if(TRIAL)StorageAdapter.save(DB_KEYS.trial,TRIAL); toast('已升級為 '+PLAN_LIMITS[p].name); go('dashboard'); }
