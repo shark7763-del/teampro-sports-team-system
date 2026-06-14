@@ -160,6 +160,32 @@ textarea{min-height:70px;resize:vertical;}
 .parent-demo .pline{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px;}
 .parent-demo .pline:last-child{border:none;}
 .parent-demo .pe{font-size:20px;width:26px;text-align:center;}
+/* 3 天體驗 流程列 */
+.trial-day{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px dashed var(--line);}
+.trial-day:last-of-type{border-bottom:none;}
+.trial-day .td-badge{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.trial-day b{font-size:14.5px;color:var(--navy);}
+/* 體驗進度卡 */
+.trial-progress{background:linear-gradient(135deg,var(--navy2),var(--blue));color:#fff;border-radius:var(--radius);padding:18px;margin:14px;box-shadow:var(--shadow);}
+.trial-progress h3{margin:0 0 4px;font-size:17px;}
+.trial-progress .tp-row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;border-top:1px solid rgba(255,255,255,.15);}
+.trial-progress .tp-row:first-of-type{border-top:none;}
+.trial-progress .tp-ic{font-size:18px;width:24px;text-align:center;}
+.trial-progress .tp-left{font-size:12px;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;font-weight:700;}
+/* 任務卡 */
+.task-row{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);}
+.task-row:last-child{border-bottom:none;}
+.task-row .tk-num{width:26px;height:26px;border-radius:50%;background:var(--card-soft);color:var(--blue);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.task-row.done .tk-num{background:var(--green);color:#fff;}
+.task-row .tk-txt{flex:1;font-size:14px;font-weight:600;color:var(--navy);}
+.task-row .tk-txt.done{text-decoration:line-through;color:var(--muted);}
+/* 優先關心名單 */
+.care-row{border:1px solid var(--line);border-left:5px solid var(--red);border-radius:12px;padding:12px;margin:9px 0;}
+.care-row.yl{border-left-color:var(--yellow);}
+.care-row .cr-top{display:flex;justify-content:space-between;align-items:center;}
+.care-row .cr-name{font-weight:800;font-size:15px;}
+.care-row .cr-reason{font-size:12.5px;color:var(--muted);margin:4px 0 8px;}
 /* 為誰打造 卡片 */
 .who-card{display:flex;align-items:flex-start;gap:13px;background:#fff;border-radius:14px;padding:15px;margin:10px 14px;box-shadow:var(--shadow);}
 .who-card .we{font-size:28px;line-height:1.1;}
@@ -241,9 +267,11 @@ hr.soft{border:none;border-top:1px solid var(--line);margin:14px 0;}
    - 預留 Google Sheet / Firebase / LINE 串接結構（adapter 留位）
    ================================================================== */
 const DB_KEYS = {
-  account:'teampro_account',     // 帳號 + 單位 + 團隊 + 運動 + 方案
-  reports:'teampro_daily_reports', // 每日回報陣列
-  session:'teampro_session'      // 是否登入
+  account:'teampro_account',     // 帳號 + 單位 + 團隊 + 運動 + 方案 (teamData)
+  reports:'teampro_daily_reports', // 每日回報陣列 (dailyReports)
+  session:'teampro_session',     // 是否登入
+  trial:'teampro_trial',         // 3 天體驗狀態 (trialData)
+  notices:'teampro_parent_notices' // 已產生的家長通知 (parentNotices)
 };
 
 // 預留：未來資料同步介面（目前只走 localStorage）
@@ -260,6 +288,47 @@ const LineAdapter = {
 
 let ACCOUNT = StorageAdapter.load(DB_KEYS.account, null);
 let REPORTS = StorageAdapter.load(DB_KEYS.reports, []);
+let NOTICES = StorageAdapter.load(DB_KEYS.notices, []);
+
+/* ==================================================================
+   【1.5】trialMode 3 天教練戰情室體驗
+   trialData: { active, startDate, endDate, progress:{day1,day2,day3} }
+   trialDay(): day1 / day2 / day3 / expired（依實際經過天數計算）
+   ================================================================== */
+let TRIAL = StorageAdapter.load(DB_KEYS.trial, null);
+
+// 體驗期間開放的功能
+const TRIAL_FEATURES = ['daily_checkin','kpi_score','body_status','nutrition_record',
+  'traffic_light','line_copy','data_save','coach_dashboard','parent_notice',
+  'roster_management','student_history','trial_report'];
+// 體驗到期後仍可使用（含 3 日體驗報告查看）
+const TRIAL_EXPIRED_KEEP = ['daily_checkin','kpi_score','body_status','nutrition_record',
+  'traffic_light','data_save','trial_report'];
+
+function startTrial(){
+  const now=new Date();
+  const end=new Date(now.getTime()+3*864e5);
+  TRIAL={ active:true, startDate:now.toISOString(), endDate:end.toISOString(),
+    progress:{day1:false,day2:false,day3:false} };
+  StorageAdapter.save(DB_KEYS.trial,TRIAL);
+}
+// 依經過天數判定目前體驗階段
+function trialDay(){
+  if(!TRIAL||!TRIAL.active) return null;
+  const elapsed=(Date.now()-new Date(TRIAL.startDate).getTime())/864e5;
+  if(elapsed>=3) return 'expired';
+  if(elapsed>=2) return 'day3';
+  if(elapsed>=1) return 'day2';
+  return 'day1';
+}
+function trialDaysLeft(){
+  if(!TRIAL||!TRIAL.active) return 0;
+  return Math.max(0,Math.ceil((new Date(TRIAL.endDate).getTime()-Date.now())/864e5));
+}
+function setTrialProgress(k){
+  if(!TRIAL) return;
+  if(!TRIAL.progress[k]){ TRIAL.progress[k]=true; StorageAdapter.save(DB_KEYS.trial,TRIAL); }
+}
 
 /* ==================================================================
    【2】權限設定 PERMISSIONS
@@ -281,23 +350,35 @@ const featurePermissions = {
   // Pro
   parent_center:'pro', ai_assistant:'pro', pregame_check:'pro', monthly_report:'pro',
   multi_team:'pro', role_permission:'pro', care_list:'pro', line_push:'pro',
-  research_export:'pro', weekly_star:'pro'
+  research_export:'pro', weekly_star:'pro',
+  trial_report:'team'   // 3 日體驗報告（體驗期間開放）
 };
 
 const PLAN_RANK = { start:1, team:2, pro:3 };
 
 function currentPlan(){ return ACCOUNT ? ACCOUNT.plan : 'start'; }
 
-// 核心：是否擁有某功能
+// 核心：是否擁有某功能（含 3 天體驗模式判斷）
 function hasFeature(featureKey){
   const need = featurePermissions[featureKey];
   if(!need) return false;
+  // 體驗模式
+  if(TRIAL && TRIAL.active){
+    const day=trialDay();
+    if(day==='expired'){
+      if(TRIAL_EXPIRED_KEEP.includes(featureKey)) return true;
+      // 到期後其餘功能回歸方案判斷（多半鎖定）
+    }else{
+      if(TRIAL_FEATURES.includes(featureKey)) return true;
+    }
+  }
+  // 一般方案判斷
   return PLAN_RANK[currentPlan()] >= PLAN_RANK[need];
 }
 
 // 升級價值說明
 const UPGRADE_VALUE = {
-  coach_dashboard:'升級 Team 團隊版後，可查看今日未填寫名單、紅黃綠燈名單、出席狀況與學生狀態，讓教練不用再靠記憶管理整支隊伍。',
+  coach_dashboard:'教練戰情室屬於 Team 團隊版功能。升級後可以查看：<br>• 今日未回報<br>• 紅黃綠燈名單<br>• 出席狀態<br>• 受傷提醒<br>• 需關懷學生<br>• 一鍵家長通知<br>讓教練不用再靠記憶管理整支隊伍。',
   roster_management:'升級 Team 團隊版後，可建立與管理完整學生名單，集中管理整支隊伍資料。',
   student_history:'升級 Team 團隊版後，可查看每位學生的歷史回報紀錄與狀態變化。',
   parent_notice:'升級 Team 團隊版後，可一鍵產生家長通知文字，快速讓家長掌握孩子狀況。',
@@ -402,12 +483,33 @@ function Landing(){
     <h1 class="pain">教練不用再靠記憶<br>管理整支隊伍</h1>
     <div class="desc" style="margin-top:4px">TeamPro 幫你自動整理學生出席、身體狀態、KPI 表現、飲食紀錄、紅黃綠燈與家長通知。</div>
     <div class="slogan">「讓每一次訓練，都留下成長的證據。」</div>
+    <div class="muted" style="color:#9fe7f5;font-size:13px;margin-bottom:4px">🎁 免費體驗 3 天，完成一次完整教練戰情室流程。</div>
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
-      <button class="btn green" onclick="go('wizard')">🚀 免費建立團隊</button>
+      <button class="btn green" onclick="go('wizard')">🎁 免費體驗 3 天</button>
+      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 查看系統展示</button>
       <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
-      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 觀看系統展示</button>
       <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
+    <!-- 4 個快速價值標籤 -->
+    <div class="chip-row" style="margin-top:16px">
+      ${[['📋','今日誰沒來'],['😟','誰狀態不好'],['❤️','誰需要關心'],['📲','一鍵通知家長']]
+        .map(t=>`<span class="who-chip"><span class="e">${t[0]}</span>${t[1]}</span>`).join('')}
+    </div>
+  </div>
+
+  <!-- 3 天教練戰情室體驗 -->
+  <div class="section-title">🎁 3 天教練戰情室體驗</div>
+  <div class="card" style="margin-bottom:6px">
+    <h2 style="margin:0 0 4px;font-size:18px">3 天體驗，讓教練看見管理差異</h2>
+    <p class="muted" style="margin:0 0 12px;line-height:1.6">不是單純免費試用，而是三天內完成一次完整的團隊管理流程。</p>
+    ${[['Day 1','建立團隊，完成第一次回報','新增學生或載入示範資料，讓選手完成今日訓練打卡，系統自動產生 KPI 與紅黃綠燈。'],
+       ['Day 2','查看教練戰情室','教練一眼看到今日未回報、紅黃綠燈、受傷提醒、睡眠不足與需要關懷的學生。'],
+       ['Day 3','產生家長通知與 3 日報告','系統自動整理三天回報紀錄，產生家長通知與體驗成果報告。']]
+      .map((d,i)=>`<div class="trial-day">
+        <span class="td-badge">${i+1}</span>
+        <div><b>${d[0]}：${d[1]}</b><p class="muted" style="margin:3px 0 0;font-size:12.5px;line-height:1.6">${d[2]}</p></div>
+      </div>`).join('')}
+    <button class="btn green" style="margin-top:12px" onclick="go('wizard')">立即開始 3 天體驗 →</button>
   </div>
 
   <!-- 為誰打造 -->
@@ -419,14 +521,17 @@ function Landing(){
     .map(w=>`<div class="who-card"><span class="we">${w[0]}</span><div class="wtxt"><b>${w[1]}</b><span>${w[2]}</span></div></div>`).join('')}
 
   <!-- 教練每天會看到什麼（戰情室卡片）-->
-  <div class="section-title">📊 教練每天會看到什麼</div>
-  <p class="muted" style="margin:-2px 14px 8px;line-height:1.7">不用一個一個問，<b style="color:var(--blue)">系統自動幫教練整理出今天最需要處理的人。</b></p>
+  <div class="section-title">📊 教練每天打開 TeamPro 會看到什麼？</div>
+  <p class="muted" style="margin:-2px 14px 8px;line-height:1.7">不需要一個一個問，<b style="color:var(--blue)">TeamPro 會自動整理今天最需要教練處理的學生狀態。</b></p>
   <div class="card" style="padding:14px">
     <div class="war-grid">
       <div class="war-card bl"><span class="we">✅</span><div class="wt">今日回報</div><div class="wn" style="color:var(--blue)">28 人</div></div>
       <div class="war-card gr"><span class="we">📝</span><div class="wt">未回報</div><div class="wn" style="color:var(--muted)">4 人</div></div>
       <div class="war-card rd"><span class="we">🔴</span><div class="wt">紅燈提醒</div><div class="wn" style="color:var(--red)">3 人</div></div>
+      <div class="war-card yl"><span class="we">🟡</span><div class="wt">黃燈提醒</div><div class="wn" style="color:var(--yellow)">6 人</div></div>
       <div class="war-card yl"><span class="we">🩹</span><div class="wt">受傷提醒</div><div class="wn" style="color:var(--yellow)">1 人</div></div>
+      <div class="war-card bl"><span class="we">😴</span><div class="wt">睡眠不足</div><div class="wn" style="color:var(--blue)">4 人</div></div>
+      <div class="war-card bl"><span class="we">💧</span><div class="wt">水量不足</div><div class="wn" style="color:var(--blue)">7 人</div></div>
       <div class="war-card gr"><span class="we">📈</span><div class="wt">本週進步最多</div><div class="wn" style="font-size:18px;color:var(--green)">陳小宇</div></div>
       <div class="war-card rd"><span class="we">❤️</span><div class="wt">本週需關懷</div><div class="wn" style="font-size:18px;color:var(--red)">王小明</div></div>
       <div class="war-card full bl"><div><div class="wt">一鍵產生家長通知</div><div class="wn" style="font-size:16px">把今日狀態一次傳給家長</div></div>
@@ -495,7 +600,7 @@ function PlanCard(p){
       feats:['包含 Team 全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
   }[p];
   return `<div class="plan ${data.ft?'featured':''}">
-    ${data.ft?'<div class="ribbon">最受歡迎</div>':''}
+    ${data.ft?'<div class="ribbon">最受教練歡迎</div>':''}
     <h3>${data.n}</h3>
     <div class="price">${data.price}</div>
     <div class="role">📌 定位：${data.r}</div>
@@ -727,6 +832,7 @@ function wizNext(step){
     // 完成註冊 → 存檔
     ACCOUNT={...d,createdAt:new Date().toISOString()};
     StorageAdapter.save(DB_KEYS.account,ACCOUNT);
+    startTrial(); // 啟動 3 天教練戰情室體驗
     WZ.step=6; render('wizard'); return;
   }
   WZ.step++; render('wizard');
@@ -741,6 +847,13 @@ function Dashboard(){
     <div><h1>👋 歡迎回來</h1><div class="sub">${a.teamName}</div></div>
     <span class="pill-plan">${L.name}</span>
   </div>
+
+  ${TrialExpiredBanner()}
+  ${TrialProgressCard()}
+  ${FirstUseTasksCard()}
+  ${CoachWarRoomCard()}
+  ${TodayCoachFlow()}
+
   <div class="card">
     <div class="info-line"><span class="k">單位名稱</span><span class="v">${a.unitName}</span></div>
     <div class="info-line"><span class="k">團隊名稱</span><span class="v">${a.teamName}</span></div>
@@ -751,8 +864,6 @@ function Dashboard(){
     <div class="info-line"><span class="k">教練上限</span><span class="v">${L.coaches} 人</span></div>
     <button class="btn outline sm" style="margin-top:12px;width:100%" onclick="showPlanCompare()">📊 查看方案比較</button>
   </div>
-
-  ${TodayCoachFlow()}
 
   ${FeatureSection('📋 今日訓練',[
     ['daily_checkin','📝','今日訓練打卡','每日出席、狀態、飲食'],
@@ -769,6 +880,7 @@ function Dashboard(){
     ['parent_notice','📢','一鍵家長通知','快速通知家長'],
   ])}
   ${FeatureSection('📈 成長報告',[
+    ['trial_report','📑','3 日體驗報告','體驗成果＋省時估算'],
     ['weekly_report','📅','本週成長報告','週數據彙整'],
     ['monthly_report','🗓️','月度成長檔案','長期變化'],
     ['personal_trend','📈','個人趨勢圖','KPI 趨勢'],
@@ -814,11 +926,244 @@ function TodayCoachFlow(){
   </div>`;
 }
 // 流程：需關懷
-function openCareFlow(){ if(hasFeature('care_list')) showFeaturePreview('care_list'); else go('coach'); }
-// 流程：家長通知
+function openCareFlow(){ go('coach'); }
+// 流程：家長通知（從戰情室或流程進入，挑第一位需關心的）
 function openParentNotice(){
+  const cares=careList();
+  if(cares.length){ showParentNoticeModal(cares[0].reportId); return; }
   if(REPORTS.length===0){ toast('請先完成一筆今日打卡'); go('checkin'); return; }
   showLineModal(REPORTS[0]);
+}
+
+/* ===== 統計工具：戰情室即時數字 ===== */
+function waterMl(str){ const m=String(str||'').match(/\d+/); return m?parseInt(m[0]):0; }
+function computeStats(dateStr){
+  const date=dateStr||new Date().toISOString().slice(0,10);
+  const todayR=REPORTS.filter(r=>r.date===date);
+  const allNames=[...new Set(REPORTS.map(r=>r.studentName))];
+  const filledToday=[...new Set(todayR.map(r=>r.studentName))];
+  return {
+    date, todayR, allNames, filledToday,
+    reported:filledToday.length,
+    notReported:Math.max(0,allNames.length-filledToday.length),
+    green:todayR.filter(r=>r.trafficLight==='green').length,
+    yellow:todayR.filter(r=>r.trafficLight==='yellow').length,
+    red:todayR.filter(r=>r.trafficLight==='red').length,
+    injured:todayR.filter(r=>r.injuryStatus==='是').length,
+    lowSleep:todayR.filter(r=>r.sleepHours<6).length,
+    lowWater:todayR.filter(r=>waterMl(r.waterAmount)<1500).length
+  };
+}
+/* 今日優先關心名單（含原因判斷） */
+function careList(){
+  const today=new Date().toISOString().slice(0,10);
+  const byName={};
+  REPORTS.forEach(r=>{ (byName[r.studentName]=byName[r.studentName]||[]).push(r); });
+  const out=[];
+  Object.keys(byName).forEach(n=>{
+    const list=byName[n].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const r=list[0];
+    const reasons=[];
+    if(r.injuryStatus==='是') reasons.push('受傷中');
+    if(r.sleepHours<6) reasons.push('睡眠不足');
+    if(r.fatigueLevel>=4) reasons.push('疲勞偏高');
+    if(waterMl(r.waterAmount)<1500) reasons.push('水量不足');
+    // KPI 連續下降
+    if(list.length>=2 && list[0].kpiAverage<list[1].kpiAverage &&
+       (list.length<3 || list[1].kpiAverage<=list[2].kpiAverage)) reasons.push('KPI 連續下降');
+    if(r.trafficLight==='red' && reasons.length===0) reasons.push('整體狀態紅燈');
+    if(reasons.length){
+      // 嚴重度排序：紅燈>受傷>其他
+      const sev=(r.trafficLight==='red'?3:0)+(r.injuryStatus==='是'?2:0)+reasons.length;
+      out.push({name:n, light:r.trafficLight, reason:reasons.join('＋'), reportId:r.reportId, sev});
+    }
+  });
+  return out.sort((a,b)=>b.sev-a.sev);
+}
+
+/* ===== 3 天體驗進度卡 ===== */
+function TrialProgressCard(){
+  if(!TRIAL || !TRIAL.active || trialDay()==='expired') return '';
+  const today=new Date().toISOString().slice(0,10);
+  const d1=REPORTS.length>0;
+  const d2=NOTICES.length>0;
+  const d3=TRIAL.progress.day3;
+  const rows=[
+    [d1,'Day 1','建立團隊並完成第一次回報'],
+    [d2,'Day 2','查看教練戰情室並產生家長通知'],
+    [d3,'Day 3','查看 3 日成長報告']
+  ];
+  // 第一個未完成 = 進行中
+  let inProg=rows.findIndex(r=>!r[0]);
+  return `<div class="trial-progress">
+    <h3>🎁 3 天教練戰情室體驗</h3>
+    <div style="font-size:12px;opacity:.85;margin-bottom:6px">體驗中 · 剩 ${trialDaysLeft()} 天（目前階段：${trialDayLabel()}）</div>
+    ${rows.map((r,i)=>{
+      const ic=r[0]?'✅':(i===inProg?'🔵':'⬜');
+      const st=r[0]?'已完成':(i===inProg?'進行中':'未開始');
+      return `<div class="tp-row"><span class="tp-ic">${ic}</span>
+        <div style="flex:1"><b>${r[1]}</b> ${r[2]}</div><span class="tp-left">${st}</span></div>`;
+    }).join('')}
+    <button class="btn" style="margin-top:12px;background:#fff;color:var(--blue)" onclick="go('reports');setTimeout(()=>document.getElementById('trial-report-anchor')?.scrollIntoView({behavior:'smooth'}),120)">📑 查看 3 日體驗報告</button>
+  </div>`;
+}
+function trialDayLabel(){ const d=trialDay(); return {day1:'Day 1',day2:'Day 2',day3:'Day 3',expired:'已結束'}[d]||'-'; }
+
+/* ===== 體驗到期提醒 ===== */
+function TrialExpiredBanner(){
+  if(!TRIAL || !TRIAL.active || trialDay()!=='expired') return '';
+  return `<div class="card" style="border:2px solid var(--red)">
+    <h3 style="margin:0 0 6px;color:var(--red)">⏰ 你的 3 天教練戰情室體驗已結束</h3>
+    <p class="muted" style="margin:0 0 8px;line-height:1.7">升級 Team 團隊版後，可繼續使用：教練戰情室、一鍵家長通知、本週成長報告、學生趨勢紀錄、紅黃綠燈名單整理。</p>
+    <div class="btn-row">
+      <button class="btn green" onclick="changePlanAndExit('team')">立即升級 Team 團隊版</button>
+      <button class="btn outline" onclick="showPlanCompare()">查看方案比較</button>
+    </div>
+  </div>`;
+}
+
+/* ===== 首次使用任務：今天只要完成 3 件事 ===== */
+function FirstUseTasksCard(){
+  const today=new Date().toISOString().slice(0,10);
+  const t1=REPORTS.length>0;
+  const t2=REPORTS.some(r=>r.date===today);
+  const t3=NOTICES.length>0;
+  if(t1&&t2&&t3) return ''; // 全部完成後收起
+  const tasks=[
+    [t1,'1','新增學生或載入示範校隊資料',[['新增學生',`go('checkin')`,'outline'],['載入示範資料',`loadDemoTeam()`,'green']]],
+    [t2,'2','完成今日訓練打卡',[['開始今日打卡',`go('checkin')`,'']]],
+    [t3,'3','查看紅黃綠燈與家長通知',[['查看戰情室',`go('coach')`,'']]]
+  ];
+  return `<div class="card" style="border:2px solid var(--blue)">
+    <h3 style="margin:0 0 2px">🚀 今天只要完成 3 件事</h3>
+    <p class="muted" style="margin:0 0 6px">跟著做一次，立刻體驗教練戰情室。</p>
+    ${tasks.map(t=>`<div class="task-row ${t[0]?'done':''}">
+      <span class="tk-num">${t[0]?'✓':t[1]}</span>
+      <span class="tk-txt ${t[0]?'done':''}">${t[2]}</span>
+    </div>
+    <div class="btn-row" style="margin:0 0 4px 37px;gap:8px;flex-wrap:wrap">
+      ${t[3].map(b=>`<button class="btn ${b[2]} sm" style="flex:1;min-width:120px" onclick="${b[1]}">${b[0]}</button>`).join('')}
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ===== 今日教練戰情室（Dashboard 內嵌）===== */
+function CoachWarRoomCard(){
+  if(!hasFeature('coach_dashboard')){
+    return `<div class="section-title">🎯 今日教練戰情室</div>
+    <div class="card center" style="border:1px dashed var(--line)">
+      <div style="font-size:34px">🔒</div>
+      <p class="muted">教練戰情室為 Team 團隊版功能，升級後可一眼掌握整隊狀態。</p>
+      <button class="btn green sm" style="width:100%" onclick="showUpgrade('coach_dashboard','教練戰情室')">查看升級價值</button>
+    </div>`;
+  }
+  const s=computeStats();
+  const cares=careList();
+  const cells=[
+    ['✅','今日回報',s.reported,'var(--blue)'],['📝','今日未回報',s.notReported,'var(--muted)'],
+    ['🟢','綠燈',s.green,'var(--green)'],['🟡','黃燈',s.yellow,'var(--yellow)'],
+    ['🔴','紅燈',s.red,'var(--red)'],['🩹','受傷提醒',s.injured,'var(--yellow)'],
+    ['😴','睡眠不足',s.lowSleep,'var(--blue)'],['💧','水量不足',s.lowWater,'var(--blue)']
+  ];
+  return `<div class="section-title">🎯 今日教練戰情室</div>
+  <div class="card" style="padding:12px">
+    <div class="war-grid" style="grid-template-columns:1fr 1fr">
+      ${cells.map(c=>`<div class="war-card"><span class="we">${c[0]}</span><div class="wt">${c[1]}</div><div class="wn" style="color:${c[3]}">${c[2]}</div></div>`).join('')}
+    </div>
+  </div>
+  <div class="section-title" style="font-size:14px">❤️ 今日優先關心名單</div>
+  <p class="muted" style="margin:-2px 14px 6px;line-height:1.6">不用一個一個問，系統自動幫教練整理出今天最需要處理的人。</p>
+  <div class="card">
+    ${cares.length? cares.slice(0,8).map((c,i)=>`<div class="care-row ${c.light==='yellow'?'yl':''}">
+      <div class="cr-top"><span class="cr-name">${i+1}. ${c.name} ${lightDot(c.light)}</span>
+        <span class="tag ${c.light==='red'?'red':'yellow'}">${trafficText(c.light)}</span></div>
+      <div class="cr-reason">原因：${c.reason}</div>
+      <div class="btn-row">
+        <button class="btn green sm" onclick="showParentNoticeModal('${c.reportId}')">📢 產生家長通知</button>
+        <button class="btn outline sm" onclick='copyParentNotice("${c.reportId}")'>📋 複製 LINE 文字</button>
+      </div>
+    </div>`).join('') : '<p class="muted center">目前沒有需要特別關心的學生 ✅<br>載入示範資料即可看到完整效果。</p>'}
+  </div>`;
+}
+
+/* ===== 載入示範校隊資料（10 位學生 × 最近 3 天）===== */
+function loadDemoTeam(){
+  const names=['王小明','李小華','陳小宇','張小安','林小偉','黃小婷','劉小杰','蔡小妤','許小恩','鄭小豪'];
+  const kpis=getKpiTemplate();
+  const today=new Date();
+  const data=[];
+  names.forEach((n,idx)=>{
+    for(let d=2; d>=0; d--){
+      const date=new Date(today-d*864e5).toISOString().slice(0,10);
+      // 設計幾位有問題的學生，讓戰情室有完整效果
+      let base=3.6 + (idx%4)*0.3 - d*0.1;
+      if(n==='王小明') base=2.6 - d*0.1;          // 連續下降 + 睡眠不足
+      if(n==='李小華') base=4.2 - d*0.5;          // KPI 連續下降
+      if(n==='陳小宇') base=4.4 + d*0.05;         // 穩定優秀（進步最多）
+      const scores={};
+      kpis.forEach(k=>scores[k]=Math.max(1,Math.min(5,Math.round(base+(Math.random()*1-0.5)))));
+      const vals=Object.values(scores); const total=vals.reduce((a,b)=>a+b,0); const avg=+(total/vals.length).toFixed(2);
+      let hi=kpis[0],lo=kpis[0]; kpis.forEach(k=>{if(scores[k]>scores[hi])hi=k; if(scores[k]<scores[lo])lo=k;});
+      const sleep = n==='王小明'?5.5 : (n==='黃小婷'?5 : (idx%5===0?6.5:7.5));
+      const fatigue = n==='王小明'?5 : (n==='劉小杰'?4 : (1+ (idx%4)));
+      const injury = (n==='陳小宇'&&false) || (n==='許小恩'&&d===0)?'是':'否';
+      const water = (n==='李小華'||n==='鄭小豪'||idx%3===0)?'1000ml':'2000ml';
+      const body = injury==='是'?'受傷中':(fatigue>=4?'疲勞':(avg>=4?'很好':'普通'));
+      const att = (n==='蔡小妤'&&d===0)?'請假':'正常出席';
+      let light = avg>=4?'green':avg>=3?'yellow':'red';
+      if((fatigue===5||body==='受傷中'||injury==='是'||sleep<6)&&light==='green') light='yellow';
+      data.push({reportId:'T'+Date.now()+'_'+idx+'_'+d+'_'+Math.floor(Math.random()*9999),
+        teamId:ACCOUNT.teamName, date, studentName:n, attendanceStatus:att, bodyStatus:body,
+        sleepHours:sleep, fatigueLevel:fatigue, injuryStatus:injury, injuryPart:injury==='是'?'腳踝':'',
+        breakfast:'三明治+豆漿', lunch:'雞腿便當', dinner:'家常菜', waterAmount:water, nightSnack: idx%4===0?'是':'否',
+        kpiScores:scores, kpiAverage:avg, kpiTotal:total, highestKpi:hi, lowestKpi:lo, trafficLight:light,
+        studentReflection:'今天訓練很認真', tomorrowGoal:'加強基本動作與體能',
+        createdAt:new Date(today-d*864e5).toISOString()});
+    }
+  });
+  REPORTS=data.concat(REPORTS);
+  StorageAdapter.save(DB_KEYS.reports,REPORTS);
+  if(TRIAL && !TRIAL.progress.day1){ setTrialProgress('day1'); }
+  toast('✅ 已載入示範校隊（10 位學生 × 3 天）');
+  go('dashboard');
+}
+function changePlanAndExit(p){ ACCOUNT.plan=p; StorageAdapter.save(DB_KEYS.account,ACCOUNT); TRIAL=TRIAL?{...TRIAL,active:false}:TRIAL; if(TRIAL)StorageAdapter.save(DB_KEYS.trial,TRIAL); toast('已升級為 '+PLAN_LIMITS[p].name); go('dashboard'); }
+
+/* ===== 一鍵家長通知（含原因）===== */
+function buildParentNotice(r,reason){
+  return `【孩子今日訓練狀態】
+
+孩子：${r.studentName}
+今日狀態：${trafficText(r.trafficLight)}
+
+今天系統提醒：
+${reason||'整體狀態良好，請持續鼓勵。'}
+
+教練提醒：
+今天有完成訓練，但狀態需要稍微調整。建議今晚提早休息，明天訓練前補充早餐與水分。
+
+回家建議：
+請協助孩子早點休息，避免含糖飲料與宵夜，明天訓練前記得補充早餐。`;
+}
+function reasonFor(reportId){ const c=careList().find(x=>x.reportId===reportId); return c?c.reason:''; }
+function showParentNoticeModal(reportId){
+  const r=REPORTS.find(x=>x.reportId===reportId); if(!r){toast('找不到紀錄');return;}
+  const text=buildParentNotice(r,reasonFor(reportId));
+  recordNotice(r);
+  showModal(`<h2>📢 家長通知</h2><p class="muted">${r.studentName} · ${r.date} · ${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}</p>
+    <div class="copybox" id="pn-text">${text}</div>
+    <button class="btn" onclick="copyText(document.getElementById('pn-text').textContent)">📋 複製到剪貼簿</button>
+    <button class="btn outline" style="margin-top:8px" onclick="closeModal()">關閉</button>`);
+}
+function copyParentNotice(reportId){
+  const r=REPORTS.find(x=>x.reportId===reportId); if(!r){toast('找不到紀錄');return;}
+  recordNotice(r);
+  copyText(buildParentNotice(r,reasonFor(reportId)));
+}
+function recordNotice(r){
+  NOTICES.push({studentName:r.studentName,date:r.date,light:r.trafficLight,createdAt:new Date().toISOString()});
+  StorageAdapter.save(DB_KEYS.notices,NOTICES);
+  if(TRIAL && !TRIAL.progress.day2){ setTrialProgress('day2'); }
 }
 
 function FeatureSection(title,feats){
@@ -850,6 +1195,8 @@ function openFeature(key){
   }
   if(key==='traffic_light'){ go('coach'); return; }
   if(key==='coach_dashboard'){ go('coach'); return; }
+  if(key==='parent_notice'){ openParentNotice(); return; }
+  if(key==='trial_report'){ go('reports'); setTimeout(()=>document.getElementById('trial-report-anchor')?.scrollIntoView({behavior:'smooth'}),120); return; }
   if(key==='weekly_report'||key==='personal_trend'||key==='monthly_report'||key==='weekly_star'||key==='basic_export'){
     go('reports'); return;
   }
@@ -1250,14 +1597,89 @@ function CoachPage(){
 }
 
 /* ---------------- 成長報告頁 ---------------- */
+/* ===== 3 日體驗報告 ===== */
+function TrialReportBlock(){
+  // 取最近 3 天資料
+  const now=new Date();
+  const days=[0,1,2].map(d=>new Date(now-d*864e5).toISOString().slice(0,10));
+  const rs=REPORTS.filter(r=>days.includes(r.date));
+  const total=rs.length;
+  const green=rs.filter(r=>r.trafficLight==='green').length;
+  const yellow=rs.filter(r=>r.trafficLight==='yellow').length;
+  const red=rs.filter(r=>r.trafficLight==='red').length;
+  const lowSleep=rs.filter(r=>r.sleepHours<6).length;
+  const highFatigue=rs.filter(r=>r.fatigueLevel>=4).length;
+  const injured=rs.filter(r=>r.injuryStatus==='是').length;
+  const noticeCount=NOTICES.length;
+  const careCount=careList().length;
+  // 平均回報率（以示範 10 人 × 3 天估算，或實際學生數）
+  const studentCount=Math.max(1,[...new Set(REPORTS.map(r=>r.studentName))].length);
+  const rate=Math.min(100,Math.round(total/(studentCount*3)*100));
+  // 最穩定 / 最需關懷
+  const byName={};
+  rs.forEach(r=>{ (byName[r.studentName]=byName[r.studentName]||[]).push(r); });
+  let stable='-',stableAvg=-1, worst='-',worstAvg=99;
+  Object.keys(byName).forEach(n=>{
+    const a=byName[n].reduce((s,r)=>s+r.kpiAverage,0)/byName[n].length;
+    if(a>stableAvg){stableAvg=a;stable=n;}
+    if(a<worstAvg){worstAvg=a;worst=n;}
+  });
+  const cares=careList();
+  if(cares.length) worst=cares[0].name;
+  // 省時估算
+  const savedMinutes=total*1 + noticeCount*3 + (red+yellow)*2;
+
+  return `<div id="trial-report-anchor"></div>
+  <div class="section-title">📑 3 日體驗報告</div>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat"><div class="num">${total}</div><div class="lbl">三天累積回報</div></div>
+      <div class="stat"><div class="num">${rate}%</div><div class="lbl">平均回報率</div></div>
+      <div class="stat"><div class="num">${noticeCount}</div><div class="lbl">家長通知</div></div>
+    </div>
+    <div class="info-line"><span class="k">🟢 綠燈次數</span><span class="v">${green}</span></div>
+    <div class="info-line"><span class="k">🟡 黃燈次數</span><span class="v">${yellow}</span></div>
+    <div class="info-line"><span class="k">🔴 紅燈次數</span><span class="v">${red}</span></div>
+    <div class="info-line"><span class="k">😴 睡眠不足次數</span><span class="v">${lowSleep}</span></div>
+    <div class="info-line"><span class="k">😮‍💨 疲勞偏高次數</span><span class="v">${highFatigue}</span></div>
+    <div class="info-line"><span class="k">🩹 受傷提醒次數</span><span class="v">${injured}</span></div>
+    <div class="info-line"><span class="k">📢 產生家長通知次數</span><span class="v">${noticeCount}</span></div>
+    <div class="info-line"><span class="k">⭐ 最穩定學生</span><span class="v">${stable}</span></div>
+    <div class="info-line"><span class="k">❤️ 最需要關懷學生</span><span class="v">${worst}</span></div>
+  </div>
+  <div class="cta-band">
+    <h3>你已完成 3 天 TeamPro 教練戰情室體驗</h3>
+    <p style="text-align:left;line-height:1.9">TeamPro 已幫你整理：<br>
+    • ${total} 筆訓練回報<br>
+    • ${red} 次紅燈提醒<br>
+    • ${yellow} 次黃燈提醒<br>
+    • ${noticeCount} 則家長通知<br>
+    • ${careCount} 位需關懷學生<br>
+    • 預估節省 <b>${savedMinutes} 分鐘</b>整理時間</p>
+    <p style="font-size:12px;opacity:.85">每筆回報省 1 分鐘・每則家長通知省 3 分鐘・每次紅黃燈整理省 2 分鐘</p>
+    <button class="btn" style="background:#fff;color:var(--blue)" onclick="changePlanAndExit('team')">升級 Team 團隊版</button>
+    <button class="btn ghost" style="margin-top:8px;border-color:#fff" onclick="changePlanAndExit('start')">繼續使用 Start 入門版</button>
+  </div>`;
+}
+
 function ReportsPage(){
+  // 標記 Day3 已查看報告
+  if(hasFeature('trial_report') && TRIAL && !TRIAL.progress.day3){ setTrialProgress('day3'); }
+  const head=`<div class="topbar"><div><h1>📈 成長報告</h1><div class="sub">3 日體驗 × 成長數據</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>`;
+
+  // 3 日體驗報告（體驗期間 / Team 以上皆可看）
+  const trialBlock = hasFeature('trial_report') ? TrialReportBlock()
+    : `<div id="trial-report-anchor"></div>`;
+
+  // 本週成長報告（非體驗功能，需 Team）
   if(!hasFeature('weekly_report')){
-    return `
-    <div class="topbar"><h1>📈 成長報告</h1><button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
-    <div class="card center"><div style="font-size:46px">🔒</div>
-      <h2>成長報告（鎖定中）</h2>
+    return head + trialBlock + `
+    <div class="section-title">📅 本週成長報告</div>
+    <div class="card center"><div style="font-size:40px">🔒</div>
       <p class="muted">${UPGRADE_VALUE.weekly_report}</p>
-      <button class="btn green" onclick="showUpgrade('weekly_report','本週成長報告')">升級解鎖</button></div>`;
+      <button class="btn green sm" style="width:100%" onclick="showUpgrade('weekly_report','本週成長報告')">升級解鎖</button></div>
+    <div style="height:30px"></div>`;
   }
   // 本週統計
   const now=new Date();const weekAgo=new Date(now-7*864e5);
@@ -1267,10 +1689,7 @@ function ReportsPage(){
   let star=null;
   if(week.length){ star=week.reduce((a,b)=>b.kpiAverage>a.kpiAverage?b:a); }
 
-  return `
-  <div class="topbar"><div><h1>📈 成長報告</h1><div class="sub">本週數據</div></div>
-    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
-
+  return head + trialBlock + `
   <div class="section-title">📅 本週成長報告</div>
   <div class="card">
     <div class="stat-row">
@@ -1349,6 +1768,17 @@ function SettingsPage(){
     <p class="muted" style="margin-top:10px">切換後回 Dashboard 即可看到功能解鎖／鎖定變化。</p>
   </div>
 
+  <div class="section-title">🎁 3 天體驗測試</div>
+  <div class="card">
+    <p class="muted" style="margin:0 0 8px">目前體驗狀態：<b>${TRIAL&&TRIAL.active?(trialDayLabel()+'（剩 '+trialDaysLeft()+' 天）'):'未啟用'}</b></p>
+    <button class="btn outline sm" style="width:100%" onclick="loadDemoTeam()">📥 載入示範校隊資料（10 人 × 3 天）</button>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn outline sm" onclick="restartTrial()">🔄 重新開始體驗</button>
+      <button class="btn gray sm" onclick="simulateExpire()">⏩ 模擬體驗到期</button>
+    </div>
+    <p class="muted" style="margin-top:8px;font-size:12px">「模擬到期」會把體驗起始日往前調 3 天，方便測試到期鎖定畫面。</p>
+  </div>
+
   <div class="section-title">✏️ 修改團隊資料</div>
   <div class="card">
     <label class="fld">團隊名稱</label><input id="s-tname" value="${ACCOUNT.teamName}">
@@ -1379,7 +1809,7 @@ function saveTeam(){
   StorageAdapter.save(DB_KEYS.account,ACCOUNT);toast('✅ 已儲存');
 }
 function exportJSON(){
-  const data={account:ACCOUNT,reports:REPORTS};
+  const data={account:ACCOUNT,reports:REPORTS,trial:TRIAL,notices:NOTICES};
   downloadFile(JSON.stringify(data,null,2),'teampro_backup.json','application/json');
   toast('📤 已匯出 JSON');
 }
@@ -1391,19 +1821,33 @@ function importJSON(e){
       const d=JSON.parse(ev.target.result);
       if(d.account){ACCOUNT=d.account;StorageAdapter.save(DB_KEYS.account,ACCOUNT);}
       if(d.reports){REPORTS=d.reports;StorageAdapter.save(DB_KEYS.reports,REPORTS);}
+      if(d.trial){TRIAL=d.trial;StorageAdapter.save(DB_KEYS.trial,TRIAL);}
+      if(d.notices){NOTICES=d.notices;StorageAdapter.save(DB_KEYS.notices,NOTICES);}
       toast('📥 匯入成功');render('settings');
     }catch(err){toast('❌ 檔案格式錯誤');}
   };
   reader.readAsText(file);
 }
 function clearData(){
-  showModal(`<h2>⚠️ 確認清除</h2><p>將清除所有回報紀錄與登入狀態（保留團隊基本資料），確定嗎？</p>
+  showModal(`<h2>⚠️ 確認清除</h2><p>將清除所有回報紀錄、家長通知與體驗進度（保留團隊基本資料），確定嗎？</p>
     <div class="btn-row"><button class="btn gray" onclick="closeModal()">取消</button>
     <button class="btn danger" onclick="doClear()">確認清除</button></div>`);
 }
 function doClear(){
-  REPORTS=[];StorageAdapter.save(DB_KEYS.reports,REPORTS);
-  closeModal();toast('🗑️ 已清除回報資料');render('settings');
+  REPORTS=[];NOTICES=[];
+  StorageAdapter.save(DB_KEYS.reports,REPORTS);
+  StorageAdapter.save(DB_KEYS.notices,NOTICES);
+  closeModal();toast('🗑️ 已清除測試資料');render('settings');
+}
+// 體驗測試工具
+function restartTrial(){ startTrial(); toast('🔄 已重新開始 3 天體驗'); render('settings'); }
+function simulateExpire(){
+  if(!TRIAL){ startTrial(); }
+  const back=new Date(Date.now()-3.1*864e5);
+  TRIAL.startDate=back.toISOString();
+  TRIAL.endDate=new Date(back.getTime()+3*864e5).toISOString();
+  StorageAdapter.save(DB_KEYS.trial,TRIAL);
+  toast('⏩ 已模擬體驗到期');render('dashboard');
 }
 function logout(){
   StorageAdapter.save(DB_KEYS.session,false);
