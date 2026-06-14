@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TeamPro 智慧運動團隊管理系統</title>
+<style>
+/* ==================================================
+   全域變數 / 視覺主題（深藍 × 亮藍 × 白 × 綠）
+   ================================================== */
+:root{
+  --navy:#0d1b3e;
+  --navy2:#13235a;
+  --blue:#2563eb;
+  --blue-light:#3b82f6;
+  --cyan:#22d3ee;
+  --green:#16a34a;
+  --green-light:#22c55e;
+  --yellow:#f59e0b;
+  --red:#dc2626;
+  --bg:#0a1228;
+  --card:#ffffff;
+  --card-soft:#f1f5fb;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --shadow:0 6px 20px rgba(13,27,62,.12);
+  --radius:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Segoe UI","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  background:linear-gradient(160deg,#0a1228,#13235a 60%,#0d1b3e);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:80px;}
+.hidden{display:none !important;}
+
+/* 按鈕 */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:16px;border:none;border-radius:14px;
+  font-size:17px;font-weight:700;cursor:pointer;transition:.15s;
+  background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.4);
+}
+.btn:active{transform:scale(.97);}
+.btn.green{background:var(--green);box-shadow:0 4px 14px rgba(22,163,74,.4);}
+.btn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.25);}
+.btn.outline{background:#fff;color:var(--blue);border:2px solid var(--blue);box-shadow:none;}
+.btn.sm{width:auto;padding:9px 16px;font-size:14px;border-radius:10px;}
+.btn.gray{background:#475569;}
+.btn.danger{background:var(--red);}
+.btn-row{display:flex;gap:10px;}
+.btn-row .btn{margin:0;}
+
+/* 表單 */
+label.fld{display:block;margin:14px 0 6px;font-weight:600;font-size:14px;color:var(--navy);}
+input,select,textarea{
+  width:100%;padding:13px;border:1.5px solid var(--line);border-radius:12px;
+  font-size:16px;font-family:inherit;background:#fff;color:var(--text);
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);}
+textarea{min-height:70px;resize:vertical;}
+
+/* 卡片 */
+.card{background:var(--card);border-radius:var(--radius);padding:18px;margin:14px;box-shadow:var(--shadow);}
+.section-title{color:#fff;font-size:15px;font-weight:800;margin:22px 14px 8px;display:flex;align-items:center;gap:8px;letter-spacing:.5px;}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;}
+.tag.green{background:#dcfce7;color:#166534;}
+.tag.yellow{background:#fef3c7;color:#92400e;}
+.tag.red{background:#fee2e2;color:#991b1b;}
+.tag.blue{background:#dbeafe;color:#1e40af;}
+.tag.gray{background:#e2e8f0;color:#475569;}
+
+/* 頂部 header */
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;background:rgba(13,27,62,.92);backdrop-filter:blur(8px);color:#fff;
+}
+.topbar h1{font-size:17px;margin:0;font-weight:800;}
+.topbar .sub{font-size:12px;color:#9db4e8;}
+
+/* 底部導覽 */
+.bottomnav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;
+  display:flex;background:rgba(13,27,62,.97);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(255,255,255,.1);z-index:40;
+}
+.bottomnav button{
+  flex:1;background:none;border:none;color:#8aa0d0;padding:10px 4px;font-size:11px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600;
+}
+.bottomnav button.active{color:var(--cyan);}
+.bottomnav button .ic{font-size:20px;}
+
+/* 功能格 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.feat{
+  background:#fff;border-radius:14px;padding:14px 12px;text-align:left;cursor:pointer;
+  border:1.5px solid var(--line);transition:.15s;position:relative;min-height:88px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.feat:active{transform:scale(.97);}
+.feat .fi{font-size:24px;}
+.feat .fn{font-weight:700;font-size:14px;line-height:1.3;}
+.feat .fd{font-size:11px;color:var(--muted);line-height:1.3;}
+.feat.locked{background:#f8fafc;opacity:.92;border-style:dashed;}
+.feat .badge{position:absolute;top:8px;right:8px;font-size:15px;}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(5,10,25,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px;}
+.modal{background:#fff;border-radius:20px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;padding:22px;}
+.modal h2{margin:0 0 6px;font-size:20px;}
+
+/* landing */
+.hero{padding:40px 22px 24px;text-align:center;color:#fff;}
+.hero .logo{font-size:46px;}
+.hero h1{font-size:26px;margin:10px 0 4px;font-weight:900;letter-spacing:1px;}
+.hero .subtitle{color:#9db4e8;font-size:14px;margin-bottom:6px;}
+.hero .slogan{color:var(--cyan);font-size:16px;font-weight:700;margin:14px 0;}
+.hero .desc{color:#c7d3ee;font-size:13px;line-height:1.8;margin:14px 0 22px;}
+.value-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;margin:10px 14px;color:#fff;}
+.value-card h3{margin:0 0 6px;font-size:15px;color:var(--cyan);}
+.value-card p{margin:0;font-size:12.5px;color:#c7d3ee;line-height:1.6;}
+
+/* plan cards */
+.plan{background:#fff;border-radius:16px;padding:18px;margin:12px 14px;border:2px solid var(--line);position:relative;}
+.plan.featured{border-color:var(--blue);box-shadow:0 8px 24px rgba(37,99,235,.25);}
+.plan .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:11px;padding:3px 12px;border-radius:20px;font-weight:700;}
+.plan h3{margin:0;font-size:20px;}
+.plan .price{font-size:24px;font-weight:900;color:var(--blue);margin:6px 0;}
+.plan .role{font-size:13px;color:var(--muted);margin-bottom:8px;}
+.plan ul{margin:8px 0;padding-left:18px;font-size:13px;color:#334155;line-height:1.9;}
+
+/* wizard */
+.steps{display:flex;gap:6px;padding:14px 16px;}
+.steps .dot{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.2);}
+.steps .dot.done{background:var(--cyan);}
+.wizard-title{color:#fff;text-align:center;font-size:13px;margin-bottom:4px;}
+
+/* stat */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+.stat{background:var(--card-soft);border-radius:12px;padding:12px 6px;text-align:center;}
+.stat .num{font-size:22px;font-weight:900;}
+.stat .lbl{font-size:11px;color:var(--muted);}
+.info-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.info-line:last-child{border:none;}
+.info-line .k{color:var(--muted);}
+.info-line .v{font-weight:700;}
+
+.kpi-item{display:flex;align-items:center;gap:10px;margin:10px 0;}
+.kpi-item .name{width:96px;font-size:14px;font-weight:600;}
+.kpi-item input[type=range]{flex:1;}
+.kpi-item .val{width:26px;text-align:center;font-weight:800;color:var(--blue);}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{padding:9px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:14px;cursor:pointer;}
+.chip.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+.report-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;}
+.light-dot{width:14px;height:14px;border-radius:50%;display:inline-block;}
+.dot-green{background:var(--green-light);}
+.dot-yellow{background:var(--yellow);}
+.dot-red{background:var(--red);}
+
+.copybox{background:#0f172a;color:#cbd5e1;border-radius:12px;padding:14px;font-size:12.5px;white-space:pre-wrap;line-height:1.7;font-family:"Consolas",monospace;margin:6px 0;}
+.muted{color:var(--muted);font-size:13px;}
+.center{text-align:center;}
+hr.soft{border:none;border-top:1px solid var(--line);margin:14px 0;}
+.pill-plan{font-size:12px;padding:4px 10px;border-radius:20px;background:#dbeafe;color:#1e40af;font-weight:700;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.4);}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* ==================================================================
+   【1】資料結構 DATA STRUCTURE
+   - 使用 localStorage 模擬後端
+   - 預留 Google Sheet / Firebase / LINE 串接結構（adapter 留位）
+   ================================================================== */
+const DB_KEYS = {
+  account:'teampro_account',     // 帳號 + 單位 + 團隊 + 運動 + 方案
+  reports:'teampro_daily_reports', // 每日回報陣列
+  session:'teampro_session'      // 是否登入
+};
+
+// 預留：未來資料同步介面（目前只走 localStorage）
+const StorageAdapter = {
+  save(key,val){ localStorage.setItem(key, JSON.stringify(val)); /* TODO: Firebase / Google Sheet 同步 */ },
+  load(key,def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def; }catch(e){ return def; } },
+  remove(key){ localStorage.removeItem(key); }
+};
+
+// 預留：LINE 推播介面（目前用「複製文字」模擬）
+const LineAdapter = {
+  push(text){ /* TODO: 串接 LINE Messaging API；目前由使用者複製貼上 */ return false; }
+};
+
+let ACCOUNT = StorageAdapter.load(DB_KEYS.account, null);
+let REPORTS = StorageAdapter.load(DB_KEYS.reports, []);
+
+/* ==================================================================
+   【2】權限設定 PERMISSIONS
+   ================================================================== */
+const PLAN_LIMITS = {
+  start:{ name:'Start 入門版', students:30,  coaches:1,  price:'NT$1,500／月' },
+  team: { name:'Team 團隊版', students:80,  coaches:3,  price:'NT$4,000／月' },
+  pro:  { name:'Pro 菁英版',  students:200, coaches:10, price:'NT$8,000／月起' }
+};
+
+// 各功能所需的最低方案
+const featurePermissions = {
+  // Start
+  daily_checkin:'start', kpi_score:'start', body_status:'start', nutrition_record:'start',
+  traffic_light:'start', line_copy:'start', data_save:'start',
+  // Team
+  coach_dashboard:'team', roster_management:'team', student_history:'team',
+  parent_notice:'team', weekly_report:'team', personal_trend:'team', basic_export:'team',
+  // Pro
+  parent_center:'pro', ai_assistant:'pro', pregame_check:'pro', monthly_report:'pro',
+  multi_team:'pro', role_permission:'pro', care_list:'pro', line_push:'pro',
+  research_export:'pro', weekly_star:'pro'
+};
+
+const PLAN_RANK = { start:1, team:2, pro:3 };
+
+function currentPlan(){ return ACCOUNT ? ACCOUNT.plan : 'start'; }
+
+// 核心：是否擁有某功能
+function hasFeature(featureKey){
+  const need = featurePermissions[featureKey];
+  if(!need) return false;
+  return PLAN_RANK[currentPlan()] >= PLAN_RANK[need];
+}
+
+// 升級價值說明
+const UPGRADE_VALUE = {
+  coach_dashboard:'升級 Team 團隊版後，可查看今日未填寫名單、紅黃綠燈名單、出席狀況與學生狀態，讓教練不用再靠記憶管理整支隊伍。',
+  roster_management:'升級 Team 團隊版後，可建立與管理完整學生名單，集中管理整支隊伍資料。',
+  student_history:'升級 Team 團隊版後，可查看每位學生的歷史回報紀錄與狀態變化。',
+  parent_notice:'升級 Team 團隊版後，可一鍵產生家長通知文字，快速讓家長掌握孩子狀況。',
+  weekly_report:'升級 Team 團隊版後，自動彙整本週訓練數據，產生成長報告。',
+  personal_trend:'升級 Team 團隊版後，可查看每位選手的 KPI 趨勢變化。',
+  basic_export:'升級 Team 團隊版後，可將回報資料匯出，方便保存與分析。',
+  parent_center:'升級 Pro 菁英版後，家長可登入查看孩子每日訓練狀態、出席紀錄、教練提醒與成長報告，提高家長信任與續班率。',
+  ai_assistant:'升級 Pro 菁英版後，系統可依據 KPI、出席、睡眠、疲勞與飲食紀錄，自動產生訓練建議、家長提醒與關懷名單。',
+  pregame_check:'升級 Pro 菁英版後，賽前可一鍵檢查選手戰力與身體狀態，降低帶傷出賽風險。',
+  monthly_report:'升級 Pro 菁英版後，自動產生月度成長檔案，完整呈現選手長期變化。',
+  multi_team:'升級 Pro 菁英版後，可同時管理多支隊伍與多個專項。',
+  role_permission:'升級 Pro 菁英版後，可設定不同教練與管理員的權限。',
+  care_list:'升級 Pro 菁英版後，系統自動列出需要關懷的選手名單。',
+  line_push:'升級 Pro 菁英版後，可自動透過 LINE 推播訓練回報與提醒。',
+  research_export:'升級 Pro 菁英版後，可匯出完整運動數據資料庫，支援研究與長期分析。',
+  weekly_star:'升級 Pro 菁英版後，系統自動選出本週之星，激勵選手持續努力。'
+};
+
+/* ==================================================================
+   【3】運動項目資料（三層：分類 → 項目 → 專項）
+   ================================================================== */
+const SPORT_TREE = {
+  '技擊類':['跆拳道','武術','散打','空手道','柔道','角力','拳擊','擊劍','劍道'],
+  '球類':['籃球','排球','足球','棒球','壘球','手球','橄欖球','桌球','羽球','網球','軟式網球','高爾夫','曲棍球'],
+  '田徑／水上類':['田徑','游泳','自由車','鐵人三項','輕艇','划船'],
+  '體操／表現類':['體操','韻律體操','競技啦啦隊','運動舞蹈','舞蹈','霹靂舞'],
+  '力量／精準類':['舉重','射箭','射擊','保齡球','撞球','木球','現代五項'],
+  '其他／地方特色項目':['龍舟','民俗體育','拔河','飛盤','滑輪溜冰','滑板','攀岩','電子競技','自訂項目']
+};
+const SUB_SPECIALTY = {
+  '跆拳道':['對練','品勢','自由品勢','基本動作','黑帶培訓','體能訓練'],
+  '武術':['套路','散打','長拳','南拳','太極拳','器械','基本功']
+};
+
+/* ==================================================================
+   【3.5】KPI 模板（依運動項目+專項自動帶入）
+   ================================================================== */
+const KPI_TEMPLATES = {
+  '跆拳道|對練':['體能','技術','專注','自律','情緒','態度','距離控制','反擊速度','攻防轉換','戰術理解'],
+  '跆拳道|品勢':['體能','動作準確','重心穩定','節奏','力道','氣勢','專注','自律','情緒','態度'],
+  '武術|套路':['體能','套路熟練度','動作爆發力','身法協調','重心穩定','節奏感','專注','自律','情緒','態度'],
+  '籃球':['體能','運球','投籃','防守','傳球','跑位','團隊合作','專注','自律','態度'],
+  '田徑':['速度','爆發力','起跑反應','步頻','步幅','核心穩定','恢復狀態','專注','自律','態度']
+};
+const KPI_GENERIC = ['體能','技術','專注','自律','情緒','態度'];
+
+function getKpiTemplate(){
+  if(!ACCOUNT) return KPI_GENERIC;
+  const sp = ACCOUNT.sport, sub = ACCOUNT.specialty;
+  if(KPI_TEMPLATES[sp+'|'+sub]) return KPI_TEMPLATES[sp+'|'+sub];
+  if(KPI_TEMPLATES[sp]) return KPI_TEMPLATES[sp];
+  return KPI_GENERIC;
+}
+
+/* ==================================================================
+   【UI 工具】toast / modal / 跳頁
+   ================================================================== */
+function toast(msg){
+  const r=document.getElementById('toast-root');
+  r.innerHTML=`<div class="toast">${msg}</div>`;
+  setTimeout(()=>r.innerHTML='',1800);
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+function showModal(html){
+  document.getElementById('modal-root').innerHTML=
+    `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+}
+function go(page,arg){ render(page,arg); window.scrollTo(0,0); }
+
+/* ==================================================================
+   【4】UI 渲染 ROUTER
+   ================================================================== */
+let CURRENT='landing';
+function render(page,arg){
+  CURRENT=page||CURRENT;
+  const app=document.getElementById('app');
+  // 登入後頁面
+  const loggedPages=['dashboard','checkin','records','coach','reports','settings'];
+  if(loggedPages.includes(CURRENT) && !StorageAdapter.load(DB_KEYS.session,false)){
+    CURRENT='landing';
+  }
+  switch(CURRENT){
+    case 'landing': app.innerHTML=Landing(); break;
+    case 'login': app.innerHTML=LoginPage(); break;
+    case 'wizard': app.innerHTML=Wizard(); break;
+    case 'dashboard': app.innerHTML=Dashboard()+BottomNav('dashboard'); break;
+    case 'checkin': app.innerHTML=CheckinPage()+BottomNav('checkin'); bindCheckin(); break;
+    case 'records': app.innerHTML=RecordsPage()+BottomNav('records'); break;
+    case 'coach': app.innerHTML=CoachPage()+BottomNav('coach'); break;
+    case 'reports': app.innerHTML=ReportsPage()+BottomNav('reports'); break;
+    case 'settings': app.innerHTML=SettingsPage()+BottomNav('settings'); break;
+    default: app.innerHTML=Landing();
+  }
+}
+
+/* ---------------- 首頁 Landing ---------------- */
+function Landing(){
+  return `
+  <div class="hero">
+    <div class="logo">🏆</div>
+    <h1>TeamPro</h1>
+    <div class="subtitle">智慧運動團隊管理系統</div>
+    <div class="subtitle">專為台灣體育班、校隊、道館與運動俱樂部打造</div>
+    <div class="slogan">「讓每一次訓練，都留下成長的證據。」</div>
+    <div class="desc">每日回報 × 教練管理 × 家長回饋 × AI 分析<br>
+    不用再靠記憶管理整支隊伍，<br>讓數據幫教練看見問題，<br>讓回饋幫家長看見努力，<br>讓紀錄幫選手看見自己的進步。</div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 8px;">
+      <button class="btn green" onclick="go('wizard')">🚀 建立我的團隊</button>
+      <button class="btn ghost" onclick="go('login')">🔑 登入系統</button>
+    </div>
+  </div>
+
+  <div class="section-title">💎 四大核心價值</div>
+  <div class="value-card"><h3>📋 今日訓練</h3><p>每日打卡、KPI 評分、身體狀態、營養紀錄，建立每日成長軌跡。</p></div>
+  <div class="value-card"><h3>🎯 教練管理</h3><p>教練戰情室、學生名單、紅黃綠燈、家長通知，整支隊伍一目了然。</p></div>
+  <div class="value-card"><h3>📈 成長報告</h3><p>週報表、月報表、個人趨勢、本週之星，努力被看見。</p></div>
+  <div class="value-card"><h3>🤖 智慧分析</h3><p>AI 教練助理、賽前戰力檢查、關懷名單、資料匯出。</p></div>
+
+  <div class="section-title">🏷️ 三種方案</div>
+  ${PlanCard('start')}
+  ${PlanCard('team')}
+  ${PlanCard('pro')}
+  <div style="height:30px"></div>
+  `;
+}
+
+function PlanCard(p){
+  const data={
+    start:{n:'Start 入門版',r:'開始建立每日回報習慣',price:PLAN_LIMITS.start.price,
+      feats:['今日訓練打卡','KPI 成長指標','身體狀態追蹤','營養狀態紀錄','紅黃綠燈判斷','一鍵 LINE 回報','資料儲存'],ft:false},
+    team:{n:'Team 團隊版',r:'讓教練真正掌握整支隊伍',price:PLAN_LIMITS.team.price,
+      feats:['包含 Start 全部','教練戰情室','學生名單管理','學生紀錄','一鍵家長通知','本週成長報告','個人趨勢圖','基礎匯出'],ft:true},
+    pro:{n:'Pro 菁英版',r:'完整運動團隊智慧管理平台',price:PLAN_LIMITS.pro.price,
+      feats:['包含 Team 全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','多隊伍管理','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
+  }[p];
+  return `<div class="plan ${data.ft?'featured':''}">
+    ${data.ft?'<div class="ribbon">最受歡迎</div>':''}
+    <h3>${data.n}</h3>
+    <div class="price">${data.price}</div>
+    <div class="role">${data.r}</div>
+    <ul>${data.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+  </div>`;
+}
+
+/* ---------------- 登入頁 ---------------- */
+function LoginPage(){
+  return `
+  <div class="topbar"><div><h1>🔑 登入系統</h1></div>
+    <button class="btn ghost sm" onclick="go('landing')">返回</button></div>
+  <div class="card">
+    <label class="fld">Email</label>
+    <input id="li-email" type="email" placeholder="admin@test.com" value="admin@test.com">
+    <label class="fld">密碼</label>
+    <input id="li-pass" type="password" placeholder="123456" value="123456">
+    <div style="height:18px"></div>
+    <button class="btn" onclick="doLogin()">登入</button>
+    <p class="muted center" style="margin-top:14px">測試帳號：admin@test.com／密碼 123456<br>（或登入你建立的團隊帳號）</p>
+    <button class="btn outline" style="margin-top:6px" onclick="go('wizard')">沒有帳號？建立我的團隊</button>
+  </div>`;
+}
+function doLogin(){
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value.trim();
+  // 測試帳號
+  if(email==='admin@test.com' && pass==='123456'){
+    if(!ACCOUNT){ ACCOUNT=demoAccount(); StorageAdapter.save(DB_KEYS.account,ACCOUNT); }
+    loginSuccess(); return;
+  }
+  // 使用者自建帳號
+  if(ACCOUNT && ACCOUNT.email===email && ACCOUNT.password===pass){ loginSuccess(); return; }
+  toast('❌ 帳號或密碼錯誤');
+}
+function loginSuccess(){
+  StorageAdapter.save(DB_KEYS.session,true);
+  toast('✅ 登入成功');
+  go('dashboard');
+}
+function demoAccount(){
+  return {
+    name:'王教練',phone:'0912345678',email:'admin@test.com',password:'123456',role:'校隊教練',
+    unitType:'國中',unitName:'示範國中',city:'台北市',address:'示範路1號',unitPhone:'02-12345678',
+    teamName:'示範跆拳道隊',headCoach:'王教練',contact:'王教練',teamSize:'25',ageGroup:'國中',
+    category:'技擊類',sport:'跆拳道',specialty:'對練',customSport:'',customSpecialty:'',
+    plan:'team',createdAt:new Date().toISOString()
+  };
+}
+
+/* ---------------- 註冊精靈 Wizard ---------------- */
+let WZ={step:1,data:{}};
+function Wizard(){
+  const titles=['建立帳號','建立單位','建立團隊','選擇運動項目','選擇方案','建立成功'];
+  const dots=[1,2,3,4,5,6].map(n=>`<div class="dot ${n<=WZ.step?'done':''}"></div>`).join('');
+  return `
+  <div class="topbar"><div><h1>🚀 建立我的團隊</h1><div class="sub">Step ${WZ.step}/6 · ${titles[WZ.step-1]}</div></div>
+    <button class="btn ghost sm" onclick="go('landing')">離開</button></div>
+  <div class="steps">${dots}</div>
+  <div class="card">${WizardStep()}</div>`;
+}
+function WizardStep(){
+  const d=WZ.data;
+  if(WZ.step===1) return `
+    <h2>Step 1 建立帳號</h2>
+    <label class="fld">姓名</label><input id="w-name" value="${d.name||''}">
+    <label class="fld">手機</label><input id="w-phone" value="${d.phone||''}">
+    <label class="fld">Email</label><input id="w-email" type="email" value="${d.email||''}">
+    <label class="fld">密碼</label><input id="w-pass" type="password" value="${d.password||''}">
+    <label class="fld">確認密碼</label><input id="w-pass2" type="password" value="${d.password||''}">
+    <label class="fld">身分</label>
+    <select id="w-role">${['校隊教練','體育班老師','道館館長','社團老師','助理教練','管理員'].map(r=>`<option ${d.role===r?'selected':''}>${r}</option>`).join('')}</select>
+    <div style="height:16px"></div>
+    <button class="btn" onclick="wizNext(1)">下一步 →</button>`;
+
+  if(WZ.step===2) return `
+    <h2>Step 2 建立單位</h2>
+    <label class="fld">單位類型</label>
+    <select id="w-utype">${['國小','國中','高中','大專院校','道館','運動俱樂部','體育班','學校社團','訓練中心'].map(r=>`<option ${d.unitType===r?'selected':''}>${r}</option>`).join('')}</select>
+    <label class="fld">單位名稱</label><input id="w-uname" value="${d.unitName||''}">
+    <label class="fld">縣市</label><input id="w-city" value="${d.city||''}">
+    <label class="fld">地址</label><input id="w-addr" value="${d.address||''}">
+    <label class="fld">聯絡電話</label><input id="w-uphone" value="${d.unitPhone||''}">
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn gray" onclick="wizBack()">← 上一步</button>
+      <button class="btn" onclick="wizNext(2)">下一步 →</button></div>`;
+
+  if(WZ.step===3) return `
+    <h2>Step 3 建立團隊</h2>
+    <label class="fld">團隊名稱</label><input id="w-tname" value="${d.teamName||''}">
+    <label class="fld">總教練姓名</label><input id="w-head" value="${d.headCoach||''}">
+    <label class="fld">主要聯絡人</label><input id="w-contact" value="${d.contact||''}">
+    <label class="fld">隊伍人數</label><input id="w-size" type="number" value="${d.teamSize||''}">
+    <label class="fld">學生年齡層</label>
+    <select id="w-age">${['國小','國中','高中','大專','成人','混齡'].map(r=>`<option ${d.ageGroup===r?'selected':''}>${r}</option>`).join('')}</select>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn gray" onclick="wizBack()">← 上一步</button>
+      <button class="btn" onclick="wizNext(3)">下一步 →</button></div>`;
+
+  if(WZ.step===4){
+    const cat=d.category||'技擊類';
+    const sport=d.sport||SPORT_TREE[cat][0];
+    const subs=SUB_SPECIALTY[sport]||[];
+    return `
+    <h2>Step 4 選擇運動項目</h2>
+    <label class="fld">① 項目分類</label>
+    <select id="w-cat" onchange="wizCatChange()">${Object.keys(SPORT_TREE).map(c=>`<option ${cat===c?'selected':''}>${c}</option>`).join('')}</select>
+    <label class="fld">② 運動項目</label>
+    <select id="w-sport" onchange="wizSportChange()">${SPORT_TREE[cat].map(s=>`<option ${sport===s?'selected':''}>${s}</option>`).join('')}</select>
+    <label class="fld">③ 專項分組</label>
+    ${subs.length?`<select id="w-sub">${subs.map(s=>`<option ${d.specialty===s?'selected':''}>${s}</option>`).join('')}</select>`
+      :`<input id="w-sub" placeholder="輸入專項（如：主項／一般）" value="${d.specialty||''}">`}
+    <div id="custom-box">${sport==='自訂項目'?customSportBox(d):''}</div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn gray" onclick="wizBack()">← 上一步</button>
+      <button class="btn" onclick="wizNext(4)">下一步 →</button></div>`;
+  }
+
+  if(WZ.step===5) return `
+    <h2>Step 5 選擇方案</h2>
+    <p class="muted">可隨時於設定頁切換方案測試不同權限。</p>
+    ${['start','team','pro'].map(p=>{
+      const L=PLAN_LIMITS[p];const sel=(d.plan||'start')===p;
+      return `<div class="plan ${sel?'featured':''}" style="margin:10px 0" onclick="wizPickPlan('${p}')">
+        ${sel?'<div class="ribbon">已選擇</div>':''}
+        <h3>${L.name}</h3><div class="price">${L.price}</div>
+        <div class="role">學生上限 ${L.students} 人 · 教練上限 ${L.coaches} 人</div></div>`;
+    }).join('')}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn gray" onclick="wizBack()">← 上一步</button>
+      <button class="btn green" onclick="wizNext(5)">建立團隊 ✓</button></div>`;
+
+  if(WZ.step===6){
+    const a=ACCOUNT;
+    return `
+    <div class="center"><div style="font-size:48px">🎉</div><h2>建立成功！</h2></div>
+    <div class="info-line"><span class="k">單位名稱</span><span class="v">${a.unitName}</span></div>
+    <div class="info-line"><span class="k">團隊名稱</span><span class="v">${a.teamName}</span></div>
+    <div class="info-line"><span class="k">運動項目</span><span class="v">${a.sport==='自訂項目'?a.customSport:a.sport}</span></div>
+    <div class="info-line"><span class="k">專項</span><span class="v">${a.specialty||'-'}</span></div>
+    <div class="info-line"><span class="k">目前方案</span><span class="v">${PLAN_LIMITS[a.plan].name}</span></div>
+    <div style="height:18px"></div>
+    <button class="btn green" onclick="loginSuccess()">開始使用 →</button>`;
+  }
+}
+function customSportBox(d){
+  return `<label class="fld">自訂運動項目名稱</label><input id="w-csport" value="${d.customSport||''}">
+  <label class="fld">自訂專項名稱</label><input id="w-cspec" value="${d.customSpecialty||''}">`;
+}
+function wizCatChange(){
+  WZ.data.category=document.getElementById('w-cat').value;
+  WZ.data.sport=SPORT_TREE[WZ.data.category][0];
+  WZ.data.specialty='';
+  render('wizard');
+}
+function wizSportChange(){
+  WZ.data.category=document.getElementById('w-cat').value;
+  WZ.data.sport=document.getElementById('w-sport').value;
+  WZ.data.specialty='';
+  render('wizard');
+}
+function wizPickPlan(p){ WZ.data.plan=p; render('wizard'); }
+function wizBack(){ if(WZ.step>1)WZ.step--; render('wizard'); }
+function wizNext(step){
+  const d=WZ.data;
+  if(step===1){
+    d.name=val('w-name');d.phone=val('w-phone');d.email=val('w-email');
+    d.password=val('w-pass');const p2=val('w-pass2');d.role=val('w-role');
+    if(!d.name||!d.email||!d.password){toast('請填寫姓名、Email、密碼');return;}
+    if(d.password!==p2){toast('兩次密碼不一致');return;}
+  }
+  if(step===2){
+    d.unitType=val('w-utype');d.unitName=val('w-uname');d.city=val('w-city');
+    d.address=val('w-addr');d.unitPhone=val('w-uphone');
+    if(!d.unitName){toast('請填寫單位名稱');return;}
+  }
+  if(step===3){
+    d.teamName=val('w-tname');d.headCoach=val('w-head');d.contact=val('w-contact');
+    d.teamSize=val('w-size');d.ageGroup=val('w-age');
+    if(!d.teamName){toast('請填寫團隊名稱');return;}
+  }
+  if(step===4){
+    d.category=val('w-cat');d.sport=val('w-sport');d.specialty=val('w-sub');
+    if(d.sport==='自訂項目'){d.customSport=val('w-csport');d.customSpecialty=val('w-cspec');d.specialty=d.customSpecialty;}
+  }
+  if(step===5){
+    d.plan=d.plan||'start';
+    // 完成註冊 → 存檔
+    ACCOUNT={...d,createdAt:new Date().toISOString()};
+    StorageAdapter.save(DB_KEYS.account,ACCOUNT);
+    WZ.step=6; render('wizard'); return;
+  }
+  WZ.step++; render('wizard');
+}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+
+/* ---------------- Dashboard ---------------- */
+function Dashboard(){
+  const a=ACCOUNT;const L=PLAN_LIMITS[a.plan];
+  return `
+  <div class="topbar">
+    <div><h1>👋 歡迎回來</h1><div class="sub">${a.teamName}</div></div>
+    <span class="pill-plan">${L.name}</span>
+  </div>
+  <div class="card">
+    <div class="info-line"><span class="k">單位名稱</span><span class="v">${a.unitName}</span></div>
+    <div class="info-line"><span class="k">團隊名稱</span><span class="v">${a.teamName}</span></div>
+    <div class="info-line"><span class="k">運動項目</span><span class="v">${a.sport==='自訂項目'?a.customSport:a.sport}</span></div>
+    <div class="info-line"><span class="k">專項</span><span class="v">${a.specialty||'-'}</span></div>
+    <div class="info-line"><span class="k">目前方案</span><span class="v">${L.name}</span></div>
+    <div class="info-line"><span class="k">學生上限</span><span class="v">${L.students} 人</span></div>
+    <div class="info-line"><span class="k">教練上限</span><span class="v">${L.coaches} 人</span></div>
+    <button class="btn outline sm" style="margin-top:12px;width:100%" onclick="showPlanCompare()">📊 查看方案比較</button>
+  </div>
+
+  ${FeatureSection('📋 今日訓練',[
+    ['daily_checkin','📝','今日訓練打卡','每日出席、狀態、飲食'],
+    ['kpi_score','⭐','選手成長指標','KPI 1～5 分評分'],
+    ['body_status','💪','身體狀態追蹤','睡眠、疲勞、受傷'],
+    ['nutrition_record','🍱','營養狀態紀錄','三餐、水量、宵夜'],
+    ['line_copy','💬','一鍵 LINE 回報','教練/家長/選手版'],
+  ])}
+  ${FeatureSection('🎯 教練管理',[
+    ['coach_dashboard','🎯','教練戰情室','整隊狀態總覽'],
+    ['roster_management','📇','學生名單管理','建立管理名單'],
+    ['student_history','📚','學生紀錄','歷史回報查詢'],
+    ['traffic_light','🚦','紅黃綠燈判斷','自動狀態分級'],
+    ['parent_notice','📢','一鍵家長通知','快速通知家長'],
+  ])}
+  ${FeatureSection('📈 成長報告',[
+    ['weekly_report','📅','本週成長報告','週數據彙整'],
+    ['monthly_report','🗓️','月度成長檔案','長期變化'],
+    ['personal_trend','📈','個人趨勢圖','KPI 趨勢'],
+    ['weekly_star','🌟','本週之星','激勵選手'],
+    ['basic_export','📤','基礎匯出','資料匯出'],
+  ])}
+  ${FeatureSection('🤖 智慧分析',[
+    ['ai_assistant','🤖','AI 教練助理','自動訓練建議'],
+    ['pregame_check','🥇','賽前戰力檢查','出賽風險評估'],
+    ['care_list','❤️','關懷提醒名單','自動關懷名單'],
+    ['line_push','📲','LINE 自動推播','自動推播提醒'],
+    ['research_export','🔬','運動數據資料庫','研究級匯出'],
+  ])}
+  <div style="height:30px"></div>`;
+}
+
+function FeatureSection(title,feats){
+  return `<div class="section-title">${title}</div>
+  <div class="card" style="padding:12px"><div class="grid2">
+  ${feats.map(f=>renderFeatureButton(f[0],f[2],featurePermissions[f[0]],f[3],f[1])).join('')}
+  </div></div>`;
+}
+
+// 渲染功能按鈕（解鎖 ✅ / 鎖定 🔒）
+function renderFeatureButton(key,name,requiredPlan,desc,icon){
+  const unlocked=hasFeature(key);
+  return `<div class="feat ${unlocked?'':'locked'}" onclick="${unlocked?`openFeature('${key}')`:`showUpgrade('${key}','${name}')`}">
+    <span class="badge">${unlocked?'✅':'🔒'}</span>
+    <span class="fi">${icon||'📦'}</span>
+    <span class="fn">${name}</span>
+    <span class="fd">${desc}</span>
+  </div>`;
+}
+
+// 點擊已解鎖功能
+function openFeature(key){
+  if(key==='daily_checkin'||key==='kpi_score'||key==='body_status'||key==='nutrition_record'){
+    go('checkin'); return;
+  }
+  if(key==='line_copy'){
+    if(REPORTS.length===0){ toast('請先完成一筆今日打卡'); go('checkin'); return; }
+    showLineModal(REPORTS[0]); return;
+  }
+  if(key==='traffic_light'){ go('coach'); return; }
+  if(key==='coach_dashboard'){ go('coach'); return; }
+  if(key==='weekly_report'||key==='personal_trend'||key==='monthly_report'||key==='weekly_star'||key==='basic_export'){
+    go('reports'); return;
+  }
+  if(key==='roster_management'||key==='student_history'){ go('records'); return; }
+  // Pro 進階功能 → 預覽內容（開發中）
+  showFeaturePreview(key);
+}
+
+function showFeaturePreview(key){
+  const names={parent_notice:'一鍵家長通知',parent_center:'家長安心中心',ai_assistant:'AI 教練助理',
+    pregame_check:'賽前戰力檢查',multi_team:'多隊伍管理',role_permission:'權限管理',
+    care_list:'關懷提醒名單',line_push:'LINE 自動推播',research_export:'運動數據資料庫'};
+  let body='';
+  if(key==='ai_assistant'){
+    body=aiAssistantPreview();
+  }else if(key==='care_list'){
+    body=careListPreview();
+  }else if(key==='parent_notice'){
+    body=`<p>選擇選手後可一鍵產生家長通知文字（範例）：</p>
+    <div class="copybox">【孩子今日訓練狀態】親愛的家長您好，孩子今日出席正常，狀態良好，請持續鼓勵。— ${ACCOUNT.teamName}</div>
+    <button class="btn sm" onclick="copyText(this.previousElementSibling.textContent)">📋 複製</button>`;
+  }else{
+    body=`<p class="muted">此功能已在你的方案中解鎖，完整版正持續開發中。目前提供基礎預覽。</p>
+    <div class="card" style="margin:0;background:var(--card-soft)"><b>${names[key]}</b><p class="muted">📌 此功能為進階功能／開發中，未來將串接更完整的資料與 LINE 推播。</p></div>`;
+  }
+  showModal(`<h2>${names[key]||'功能'}</h2>${body}<div style="height:14px"></div><button class="btn" onclick="closeModal()">關閉</button>`);
+}
+
+// AI 教練助理（依資料自動產生建議）
+function aiAssistantPreview(){
+  if(REPORTS.length===0) return `<p class="muted">尚無資料，請先完成幾筆每日打卡後再使用 AI 分析。</p>`;
+  const reds=REPORTS.filter(r=>r.trafficLight==='red');
+  const fatigue=REPORTS.filter(r=>r.fatigueLevel>=4);
+  const lowsleep=REPORTS.filter(r=>r.sleepHours<6);
+  const injured=REPORTS.filter(r=>r.injuryStatus==='是');
+  let s=`<div class="card" style="margin:0 0 10px;background:var(--card-soft)">
+    <b>🤖 AI 訓練建議</b><ul style="margin:8px 0;padding-left:18px;font-size:13px;line-height:1.8">`;
+  s+=reds.length?`<li>有 ${reds.length} 位選手亮紅燈，建議優先個別關心與調整訓練量。</li>`:`<li>目前無紅燈選手，整體狀態穩定。</li>`;
+  if(fatigue.length) s+=`<li>${fatigue.length} 筆紀錄疲勞度偏高（≥4），建議安排恢復訓練。</li>`;
+  if(lowsleep.length) s+=`<li>${lowsleep.length} 筆睡眠不足 6 小時，建議提醒家長注意作息。</li>`;
+  if(injured.length) s+=`<li>${injured.length} 筆回報受傷中，建議避免高強度對抗。</li>`;
+  s+=`</ul></div>`;
+  return s;
+}
+function careListPreview(){
+  const care=REPORTS.filter(r=>r.trafficLight==='red'||r.fatigueLevel>=5||r.injuryStatus==='是'||r.sleepHours<6);
+  if(care.length===0) return `<p class="muted">目前沒有需要特別關懷的選手 ✅</p>`;
+  return `<p>系統自動列出需關懷選手：</p>`+care.slice(0,8).map(r=>
+    `<div class="report-item"><div><b>${r.studentName}</b><div class="muted">${r.date} · ${trafficText(r.trafficLight)}</div></div>
+     <span class="tag red">需關心</span></div>`).join('');
+}
+
+/* 升級提示 Modal */
+function showUpgrade(key,name){
+  const need=featurePermissions[key];
+  showModal(`
+    <div class="center"><div style="font-size:40px">🔒</div><h2>此功能尚未解鎖</h2></div>
+    <div class="info-line"><span class="k">功能名稱</span><span class="v">${name}</span></div>
+    <div class="info-line"><span class="k">目前方案</span><span class="v">${PLAN_LIMITS[currentPlan()].name}</span></div>
+    <div class="info-line"><span class="k">需要方案</span><span class="v">${PLAN_LIMITS[need].name}</span></div>
+    <div class="card" style="margin:14px 0;background:var(--card-soft)">
+      <b>💡 升級後價值</b><p class="muted" style="margin:6px 0 0">${UPGRADE_VALUE[key]||'升級後即可使用此功能。'}</p>
+    </div>
+    <p class="muted">建議升級方案：<b>${PLAN_LIMITS[need].name}（${PLAN_LIMITS[need].price}）</b></p>
+    <div class="btn-row">
+      <button class="btn gray" onclick="closeModal()">稍後再說</button>
+      <button class="btn green" onclick="closeModal();go('settings')">我想升級</button>
+    </div>`);
+}
+
+/* 方案比較 Modal */
+function showPlanCompare(){
+  showModal(`<h2>📊 方案比較</h2>
+    ${['start','team','pro'].map(p=>PlanCard(p)).join('').replace(/margin:12px 14px/g,'margin:12px 0')}
+    <button class="btn" onclick="closeModal()">關閉</button>`);
+}
+
+/* ---------------- 每日訓練打卡頁 ---------------- */
+function CheckinPage(){
+  const today=new Date().toISOString().slice(0,10);
+  const kpis=getKpiTemplate();
+  return `
+  <div class="topbar"><div><h1>📝 今日訓練打卡</h1><div class="sub">${ACCOUNT.sport==='自訂項目'?ACCOUNT.customSport:ACCOUNT.sport} · ${ACCOUNT.specialty||''}</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+
+  <div class="card">
+    <label class="fld">日期</label><input id="c-date" type="date" value="${today}">
+    <label class="fld">學生姓名</label><input id="c-name" placeholder="請輸入選手姓名">
+    <label class="fld">出席狀態</label>
+    <select id="c-att">${['正常出席','請假','遲到','早退'].map(x=>`<option>${x}</option>`).join('')}</select>
+  </div>
+
+  <div class="section-title">💪 身體狀態追蹤</div>
+  <div class="card">
+    <label class="fld">身體狀態</label>
+    <select id="c-body">${['很好','普通','疲勞','不舒服','受傷中'].map(x=>`<option>${x}</option>`).join('')}</select>
+    <label class="fld">睡眠時數</label><input id="c-sleep" type="number" step="0.5" value="7">
+    <label class="fld">疲勞程度（1～5）</label>
+    <select id="c-fatigue">${[1,2,3,4,5].map(x=>`<option ${x===2?'selected':''}>${x}</option>`).join('')}</select>
+    <label class="fld">是否受傷</label>
+    <select id="c-injury" onchange="document.getElementById('c-injpart').style.display=this.value==='是'?'block':'none'"><option>否</option><option>是</option></select>
+    <input id="c-injpart" placeholder="受傷部位" style="display:none;margin-top:8px">
+  </div>
+
+  <div class="section-title">🍱 營養狀態紀錄</div>
+  <div class="card">
+    <label class="fld">早餐</label><input id="c-bf" placeholder="例：三明治+豆漿">
+    <label class="fld">午餐</label><input id="c-lunch" placeholder="例：便當">
+    <label class="fld">晚餐</label><input id="c-dinner" placeholder="例：家裡飯菜">
+    <label class="fld">水量（ml / 杯）</label><input id="c-water" placeholder="例：2000ml">
+    <label class="fld">是否宵夜</label><select id="c-snack"><option>否</option><option>是</option></select>
+  </div>
+
+  <div class="section-title">⭐ 選手成長指標 KPI（1～5 分）</div>
+  <div class="card" id="kpi-box">
+    ${kpis.map((k,i)=>`<div class="kpi-item">
+      <span class="name">${k}</span>
+      <input type="range" min="1" max="5" value="3" data-kpi="${k}" oninput="this.nextElementSibling.textContent=this.value">
+      <span class="val">3</span></div>`).join('')}
+  </div>
+
+  <div class="section-title">📝 心得與目標</div>
+  <div class="card">
+    <label class="fld">今日心得</label><textarea id="c-reflect" placeholder="今天訓練的感受..."></textarea>
+    <label class="fld">明日目標</label><textarea id="c-goal" placeholder="明天想加強..."></textarea>
+  </div>
+
+  <div style="padding:0 14px 20px">
+    <button class="btn green" onclick="submitCheckin()">✅ 送出打卡並產生報告</button>
+  </div>`;
+}
+function bindCheckin(){ /* range 已用 inline oninput 綁定 */ }
+
+/* ---------------- 每日回報：計算 + 儲存 ---------------- */
+function submitCheckin(){
+  const name=val('c-name');
+  if(!name){ toast('請輸入學生姓名'); return; }
+  // 收集 KPI
+  const kpiScores={};
+  document.querySelectorAll('#kpi-box input[type=range]').forEach(r=>{
+    kpiScores[r.dataset.kpi]=parseInt(r.value);
+  });
+  const vals=Object.values(kpiScores);
+  const total=vals.reduce((a,b)=>a+b,0);
+  const avg=+(total/vals.length).toFixed(2);
+  // 最高/最低項
+  let hi=Object.keys(kpiScores)[0],lo=Object.keys(kpiScores)[0];
+  Object.keys(kpiScores).forEach(k=>{ if(kpiScores[k]>kpiScores[hi])hi=k; if(kpiScores[k]<kpiScores[lo])lo=k; });
+
+  const sleep=parseFloat(val('c-sleep'))||0;
+  const fatigue=parseInt(val('c-fatigue'))||1;
+  const body=val('c-body');
+  const injury=val('c-injury');
+
+  // 紅黃綠燈判斷
+  let light = avg>=4 ? 'green' : (avg>=3 ? 'yellow' : 'red');
+  // 安全規則：疲勞5/受傷中/睡眠<6 至少黃燈
+  if((fatigue===5 || body==='受傷中' || injury==='是' || sleep<6) && light==='green') light='yellow';
+
+  const report={
+    reportId:'R'+Date.now(),
+    teamId:ACCOUNT.teamName,
+    date:val('c-date'),
+    studentName:name,
+    attendanceStatus:val('c-att'),
+    bodyStatus:body,
+    sleepHours:sleep,
+    fatigueLevel:fatigue,
+    injuryStatus:injury,
+    injuryPart:val('c-injpart'),
+    breakfast:val('c-bf'),
+    lunch:val('c-lunch'),
+    dinner:val('c-dinner'),
+    waterAmount:val('c-water'),
+    nightSnack:val('c-snack'),
+    kpiScores,
+    kpiAverage:avg,
+    kpiTotal:total,
+    highestKpi:hi,
+    lowestKpi:lo,
+    trafficLight:light,
+    studentReflection:val('c-reflect'),
+    tomorrowGoal:val('c-goal'),
+    createdAt:new Date().toISOString()
+  };
+  REPORTS.unshift(report);
+  StorageAdapter.save(DB_KEYS.reports,REPORTS);
+  toast('✅ 打卡完成！');
+  showResultModal(report);
+}
+
+function showResultModal(r){
+  showModal(`
+  <div class="center"><div style="font-size:40px">${lightEmoji(r.trafficLight)}</div>
+    <h2>${r.studentName} 今日報告</h2></div>
+  <div class="stat-row">
+    <div class="stat"><div class="num">${r.kpiAverage}</div><div class="lbl">KPI 平均</div></div>
+    <div class="stat"><div class="num">${r.kpiTotal}</div><div class="lbl">KPI 總分</div></div>
+    <div class="stat"><div class="num">${lightEmoji(r.trafficLight)}</div><div class="lbl">${trafficText(r.trafficLight)}</div></div>
+  </div>
+  <div class="info-line"><span class="k">最高項目</span><span class="v">⬆️ ${r.highestKpi}（${r.kpiScores[r.highestKpi]}）</span></div>
+  <div class="info-line"><span class="k">最低項目</span><span class="v">⬇️ ${r.lowestKpi}（${r.kpiScores[r.lowestKpi]}）</span></div>
+  <div class="info-line"><span class="k">身體狀態</span><span class="v">${r.bodyStatus}</span></div>
+  <div class="info-line"><span class="k">睡眠／疲勞</span><span class="v">${r.sleepHours}h / ${r.fatigueLevel}</span></div>
+  <div style="height:14px"></div>
+  ${hasFeature('line_copy')?`<button class="btn" onclick="showLineModal(REPORTS[0])">💬 產生 LINE 回報文字</button>`:''}
+  <button class="btn outline" style="margin-top:8px" onclick="closeModal();go('records')">查看最近紀錄</button>
+  <button class="btn gray" style="margin-top:8px" onclick="closeModal();go('dashboard')">回首頁</button>`);
+}
+
+function lightEmoji(l){return l==='green'?'🟢':l==='yellow'?'🟡':'🔴';}
+function trafficText(l){return l==='green'?'綠燈 · 穩定':l==='yellow'?'黃燈 · 提醒':'紅燈 · 關心';}
+function lightDot(l){return `<span class="light-dot dot-${l}"></span>`;}
+
+/* ==================================================================
+   【5】LINE 回報文字產生（教練版／家長版／選手版）
+   ================================================================== */
+function buildLineText(r,type){
+  const team=ACCOUNT.teamName;
+  const foodTip = (r.nightSnack==='是'?'注意宵夜攝取；':'') + (r.waterAmount?('水量 '+r.waterAmount):'水分補充充足');
+  if(type==='coach'){
+    return `【TeamPro 今日訓練回報】
+團隊：${team}
+選手：${r.studentName}
+日期：${r.date}
+出席：${r.attendanceStatus}
+今日 KPI：${r.kpiAverage}（總分 ${r.kpiTotal}）
+狀態燈號：${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}
+身體狀態：${r.bodyStatus}
+睡眠：${r.sleepHours} 小時
+疲勞：${r.fatigueLevel}/5
+飲食提醒：${foodTip}
+今日心得：${r.studentReflection||'-'}
+明日目標：${r.tomorrowGoal||'-'}`;
+  }
+  if(type==='parent'){
+    const tip = r.trafficLight==='red'?'今日狀態需要多關心，建議充足休息。':
+                r.trafficLight==='yellow'?'今日狀態尚可，請留意作息與飲食。':'今日狀態良好，請持續鼓勵！';
+    return `【孩子今日訓練狀態】
+孩子：${r.studentName}
+今日狀態：${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}
+今日努力亮點：${r.highestKpi}（${r.kpiScores[r.highestKpi]} 分）
+教練提醒：${tip}
+回家建議：${r.sleepHours<7?'早點休息，補足睡眠；':''}均衡飲食、充足水分。`;
+  }
+  // player
+  return `【我的今日訓練紀錄】
+今日 KPI：${r.kpiAverage}（總分 ${r.kpiTotal}）
+我最好的項目：${r.highestKpi}（${r.kpiScores[r.highestKpi]} 分）
+我需要加強：${r.lowestKpi}（${r.kpiScores[r.lowestKpi]} 分）
+明日目標：${r.tomorrowGoal||'繼續努力！'}`;
+}
+
+function showLineModal(r){
+  const coach=buildLineText(r,'coach');
+  const parent=buildLineText(r,'parent');
+  const player=buildLineText(r,'player');
+  showModal(`<h2>💬 LINE 回報文字</h2>
+    <p class="muted">${r.studentName} · ${r.date}</p>
+    <b>👨‍🏫 教練版</b>
+    <div class="copybox" id="lt-coach">${coach}</div>
+    <button class="btn sm" onclick="copyText(document.getElementById('lt-coach').textContent)">📋 複製教練版</button>
+    <hr class="soft">
+    <b>👪 家長版</b>
+    <div class="copybox" id="lt-parent">${parent}</div>
+    <button class="btn sm" onclick="copyText(document.getElementById('lt-parent').textContent)">📋 複製家長版</button>
+    <hr class="soft">
+    <b>🏃 選手版</b>
+    <div class="copybox" id="lt-player">${player}</div>
+    <button class="btn sm" onclick="copyText(document.getElementById('lt-player').textContent)">📋 複製選手版</button>
+    <div style="height:14px"></div>
+    <button class="btn" onclick="closeModal()">關閉</button>`);
+}
+function copyText(t){
+  navigator.clipboard?.writeText(t).then(()=>toast('📋 已複製到剪貼簿'),()=>fallbackCopy(t));
+  if(!navigator.clipboard) fallbackCopy(t);
+}
+function fallbackCopy(t){
+  const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);
+  ta.select();try{document.execCommand('copy');toast('📋 已複製');}catch(e){toast('複製失敗，請手動選取');}
+  document.body.removeChild(ta);
+}
+
+/* ---------------- 最近回報紀錄頁 ---------------- */
+function RecordsPage(){
+  const recent=REPORTS.slice(0,20);
+  return `
+  <div class="topbar"><div><h1>📚 最近回報紀錄</h1><div class="sub">共 ${REPORTS.length} 筆</div></div>
+    <button class="btn ghost sm" onclick="go('checkin')">+ 打卡</button></div>
+  ${recent.length===0?`<div class="card center"><p class="muted">尚無紀錄，點右上角開始打卡 📝</p>
+    <button class="btn" onclick="go('checkin')">立即打卡</button></div>`:''}
+  <div class="card">
+    <b>最近 5 筆</b>
+    ${REPORTS.slice(0,5).map(r=>`<div class="report-item" onclick='showRecordDetail("${r.reportId}")'>
+      <div><b>${r.studentName}</b> ${lightDot(r.trafficLight)}<div class="muted">${r.date} · KPI 平均 ${r.kpiAverage}</div></div>
+      <span class="tag ${r.trafficLight==='green'?'green':r.trafficLight==='yellow'?'yellow':'red'}">${trafficText(r.trafficLight)}</span>
+    </div>`).join('')||'<p class="muted">—</p>'}
+  </div>
+  ${recent.length>5?`<div class="card"><b>更早的紀錄</b>
+    ${recent.slice(5).map(r=>`<div class="report-item" onclick='showRecordDetail("${r.reportId}")'>
+      <div><b>${r.studentName}</b> ${lightDot(r.trafficLight)}<div class="muted">${r.date} · ${r.kpiAverage}</div></div>
+      <span class="muted">›</span></div>`).join('')}</div>`:''}
+  <div style="height:30px"></div>`;
+}
+function showRecordDetail(id){
+  const r=REPORTS.find(x=>x.reportId===id);if(!r)return;
+  showModal(`<h2>${r.studentName}</h2><p class="muted">${r.date}</p>
+    <div class="stat-row">
+      <div class="stat"><div class="num">${r.kpiAverage}</div><div class="lbl">平均</div></div>
+      <div class="stat"><div class="num">${lightEmoji(r.trafficLight)}</div><div class="lbl">燈號</div></div>
+      <div class="stat"><div class="num">${r.attendanceStatus}</div><div class="lbl">出席</div></div>
+    </div>
+    <div class="info-line"><span class="k">身體狀態</span><span class="v">${r.bodyStatus}</span></div>
+    <div class="info-line"><span class="k">睡眠/疲勞</span><span class="v">${r.sleepHours}h / ${r.fatigueLevel}</span></div>
+    <div class="info-line"><span class="k">最高/最低</span><span class="v">${r.highestKpi} / ${r.lowestKpi}</span></div>
+    <div class="info-line"><span class="k">飲食</span><span class="v">${r.breakfast||'-'} / ${r.lunch||'-'} / ${r.dinner||'-'}</span></div>
+    <div class="info-line"><span class="k">心得</span><span class="v">${r.studentReflection||'-'}</span></div>
+    <div class="info-line"><span class="k">明日目標</span><span class="v">${r.tomorrowGoal||'-'}</span></div>
+    <div style="height:12px"></div>
+    ${hasFeature('line_copy')?`<button class="btn" onclick="showLineModal(REPORTS.find(x=>x.reportId==='${id}'))">💬 LINE 回報</button>`:''}
+    <button class="btn gray" style="margin-top:8px" onclick="closeModal()">關閉</button>`);
+}
+
+/* ---------------- 教練戰情室 ---------------- */
+function CoachPage(){
+  if(!hasFeature('coach_dashboard')){
+    return `
+    <div class="topbar"><h1>🎯 教練戰情室</h1>
+      <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+    <div class="card center">
+      <div style="font-size:46px">🔒</div>
+      <h2>教練戰情室（鎖定中）</h2>
+      <p class="muted">${UPGRADE_VALUE.coach_dashboard}</p>
+      <div class="card" style="background:var(--card-soft);text-align:left">
+        <b>升級後可看到：</b>
+        <ul style="font-size:13px;color:#475569;line-height:1.9">
+          <li>今日填寫人數</li><li>紅黃綠燈名單</li><li>未填寫名單</li><li>需關懷名單</li></ul>
+      </div>
+      <button class="btn green" onclick="showUpgrade('coach_dashboard','教練戰情室')">立即升級 Team</button>
+    </div>`;
+  }
+  // 統計
+  const today=new Date().toISOString().slice(0,10);
+  const todayR=REPORTS.filter(r=>r.date===today);
+  const green=REPORTS.filter(r=>r.trafficLight==='green').length;
+  const yellow=REPORTS.filter(r=>r.trafficLight==='yellow').length;
+  const red=REPORTS.filter(r=>r.trafficLight==='red').length;
+  const care=REPORTS.filter(r=>r.trafficLight==='red'||r.fatigueLevel>=5||r.injuryStatus==='是');
+  const filledNames=[...new Set(todayR.map(r=>r.studentName))];
+  // 假名單（示範未填寫）
+  const demoRoster=['林小明','陳大華','王美麗','張志強','李雅婷'];
+  const notFilled=demoRoster.filter(n=>!filledNames.includes(n));
+
+  return `
+  <div class="topbar"><div><h1>🎯 教練戰情室</h1><div class="sub">${ACCOUNT.teamName}</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat"><div class="num">${todayR.length}</div><div class="lbl">今日填寫</div></div>
+      <div class="stat"><div class="num">${REPORTS.length}</div><div class="lbl">最近回報</div></div>
+      <div class="stat"><div class="num" style="color:var(--green)">${green}</div><div class="lbl">🟢 綠燈</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="num" style="color:var(--yellow)">${yellow}</div><div class="lbl">🟡 黃燈</div></div>
+      <div class="stat"><div class="num" style="color:var(--red)">${red}</div><div class="lbl">🔴 紅燈</div></div>
+      <div class="stat"><div class="num" style="color:var(--red)">${care.length}</div><div class="lbl">❤️ 需關懷</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">🚦 紅黃綠燈名單</div>
+  <div class="card">
+    ${REPORTS.slice(0,8).map(r=>`<div class="report-item" onclick='showRecordDetail("${r.reportId}")'>
+      <div><b>${r.studentName}</b> ${lightDot(r.trafficLight)}<div class="muted">${r.date} · KPI ${r.kpiAverage}</div></div>
+      <span class="tag ${r.trafficLight==='green'?'green':r.trafficLight==='yellow'?'yellow':'red'}">${trafficText(r.trafficLight)}</span>
+    </div>`).join('')||'<p class="muted">尚無資料</p>'}
+  </div>
+
+  <div class="section-title">📋 今日未填寫名單（示範資料）</div>
+  <div class="card">
+    ${notFilled.length?notFilled.map(n=>`<div class="report-item"><div><b>${n}</b><div class="muted">尚未回報</div></div>
+      <span class="tag gray">未填寫</span></div>`).join(''):'<p class="muted">全員已填寫 ✅</p>'}
+  </div>
+
+  <div class="section-title">❤️ 需關懷名單</div>
+  <div class="card">
+    ${care.length?care.slice(0,8).map(r=>`<div class="report-item"><div><b>${r.studentName}</b><div class="muted">${r.date} · ${trafficText(r.trafficLight)}</div></div>
+      <span class="tag red">關懷</span></div>`).join(''):'<p class="muted">目前無需特別關懷的選手 ✅</p>'}
+  </div>
+  <div style="height:30px"></div>`;
+}
+
+/* ---------------- 成長報告頁 ---------------- */
+function ReportsPage(){
+  if(!hasFeature('weekly_report')){
+    return `
+    <div class="topbar"><h1>📈 成長報告</h1><button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+    <div class="card center"><div style="font-size:46px">🔒</div>
+      <h2>成長報告（鎖定中）</h2>
+      <p class="muted">${UPGRADE_VALUE.weekly_report}</p>
+      <button class="btn green" onclick="showUpgrade('weekly_report','本週成長報告')">升級解鎖</button></div>`;
+  }
+  // 本週統計
+  const now=new Date();const weekAgo=new Date(now-7*864e5);
+  const week=REPORTS.filter(r=>new Date(r.date)>=weekAgo);
+  const avg=week.length?(week.reduce((a,r)=>a+r.kpiAverage,0)/week.length).toFixed(2):'-';
+  // 本週之星（Pro）
+  let star=null;
+  if(week.length){ star=week.reduce((a,b)=>b.kpiAverage>a.kpiAverage?b:a); }
+
+  return `
+  <div class="topbar"><div><h1>📈 成長報告</h1><div class="sub">本週數據</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+
+  <div class="section-title">📅 本週成長報告</div>
+  <div class="card">
+    <div class="stat-row">
+      <div class="stat"><div class="num">${week.length}</div><div class="lbl">本週回報</div></div>
+      <div class="stat"><div class="num">${avg}</div><div class="lbl">平均 KPI</div></div>
+      <div class="stat"><div class="num">${week.filter(r=>r.trafficLight==='green').length}</div><div class="lbl">綠燈次數</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">🌟 本週之星 ${hasFeature('weekly_star')?'':'🔒'}</div>
+  <div class="card">
+    ${hasFeature('weekly_star')
+      ? (star?`<div class="center"><div style="font-size:40px">🌟</div><h2>${star.studentName}</h2>
+          <p class="muted">本週最高 KPI 平均 ${star.kpiAverage}（${star.date}）</p></div>`
+        :'<p class="muted">本週尚無資料</p>')
+      : `<p class="muted">🔒 升級 Pro 菁英版後，系統自動選出本週之星。</p>
+         <button class="btn sm green" onclick="showUpgrade('weekly_star','本週之星')">升級解鎖</button>`}
+  </div>
+
+  <div class="section-title">📈 個人趨勢圖</div>
+  <div class="card">${personalTrend()}</div>
+
+  <div class="section-title">🗓️ 月度成長檔案 ${hasFeature('monthly_report')?'':'🔒'}</div>
+  <div class="card">
+    ${hasFeature('monthly_report')
+      ?`<p class="muted">本月共 ${REPORTS.length} 筆紀錄，整體平均 KPI ${REPORTS.length?(REPORTS.reduce((a,r)=>a+r.kpiAverage,0)/REPORTS.length).toFixed(2):'-'}。</p>`
+      :`<p class="muted">🔒 升級 Pro 後可查看完整月度成長檔案。</p><button class="btn sm green" onclick="showUpgrade('monthly_report','月度成長檔案')">升級解鎖</button>`}
+  </div>
+
+  <div class="section-title">📤 基礎匯出</div>
+  <div class="card">
+    <button class="btn outline" onclick="exportCSV()">匯出回報紀錄 CSV</button>
+  </div>
+  <div style="height:30px"></div>`;
+}
+function personalTrend(){
+  if(!hasFeature('personal_trend')) return `<p class="muted">🔒 升級 Team 後可看個人趨勢圖。</p>`;
+  // 取每位選手最近紀錄做簡易長條
+  const byName={};
+  REPORTS.forEach(r=>{ (byName[r.studentName]=byName[r.studentName]||[]).push(r); });
+  const names=Object.keys(byName).slice(0,5);
+  if(names.length===0) return `<p class="muted">尚無資料</p>`;
+  return names.map(n=>{
+    const list=byName[n].slice(0,7).reverse();
+    const bars=list.map(r=>{
+      const h=r.kpiAverage/5*60;
+      const c=r.trafficLight==='green'?'var(--green-light)':r.trafficLight==='yellow'?'var(--yellow)':'var(--red)';
+      return `<div title="${r.date}:${r.kpiAverage}" style="width:18px;height:${h}px;background:${c};border-radius:4px 4px 0 0"></div>`;
+    }).join('');
+    return `<div style="margin:10px 0"><b style="font-size:14px">${n}</b>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:6px;border-bottom:1px solid var(--line)">${bars}</div></div>`;
+  }).join('');
+}
+function exportCSV(){
+  if(REPORTS.length===0){toast('沒有資料可匯出');return;}
+  const headers=['date','studentName','attendanceStatus','bodyStatus','sleepHours','fatigueLevel','kpiAverage','kpiTotal','trafficLight'];
+  const rows=REPORTS.map(r=>headers.map(h=>`"${r[h]??''}"`).join(','));
+  const csv='﻿'+headers.join(',')+'\n'+rows.join('\n');
+  downloadFile(csv,'teampro_reports.csv','text/csv');
+  toast('📤 已匯出 CSV');
+}
+
+/* ==================================================================
+   【6】系統設定（測試展示用）
+   ================================================================== */
+function SettingsPage(){
+  return `
+  <div class="topbar"><div><h1>⚙️ 系統設定</h1><div class="sub">測試展示工具</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+
+  <div class="section-title">🏷️ 切換目前方案（測試權限）</div>
+  <div class="card">
+    <div class="chips">
+      ${['start','team','pro'].map(p=>`<span class="chip ${currentPlan()===p?'active':''}" onclick="changePlan('${p}')">${PLAN_LIMITS[p].name}</span>`).join('')}
+    </div>
+    <p class="muted" style="margin-top:10px">切換後回 Dashboard 即可看到功能解鎖／鎖定變化。</p>
+  </div>
+
+  <div class="section-title">✏️ 修改團隊資料</div>
+  <div class="card">
+    <label class="fld">團隊名稱</label><input id="s-tname" value="${ACCOUNT.teamName}">
+    <label class="fld">總教練</label><input id="s-head" value="${ACCOUNT.headCoach||''}">
+    <label class="fld">單位名稱</label><input id="s-uname" value="${ACCOUNT.unitName}">
+    <button class="btn sm" style="margin-top:12px;width:100%" onclick="saveTeam()">儲存修改</button>
+  </div>
+
+  <div class="section-title">💾 資料管理</div>
+  <div class="card">
+    <button class="btn outline" onclick="exportJSON()">📤 匯出 JSON 備份</button>
+    <label class="btn outline" style="margin-top:8px;display:block;text-align:center;cursor:pointer">
+      📥 匯入 JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
+    <button class="btn danger" style="margin-top:8px" onclick="clearData()">🗑️ 清除所有測試資料</button>
+  </div>
+
+  <div class="card">
+    <button class="btn gray" onclick="logout()">🚪 登出</button>
+  </div>
+  <div style="height:30px"></div>`;
+}
+function changePlan(p){
+  ACCOUNT.plan=p;StorageAdapter.save(DB_KEYS.account,ACCOUNT);
+  toast('已切換為 '+PLAN_LIMITS[p].name);render('settings');
+}
+function saveTeam(){
+  ACCOUNT.teamName=val('s-tname');ACCOUNT.headCoach=val('s-head');ACCOUNT.unitName=val('s-uname');
+  StorageAdapter.save(DB_KEYS.account,ACCOUNT);toast('✅ 已儲存');
+}
+function exportJSON(){
+  const data={account:ACCOUNT,reports:REPORTS};
+  downloadFile(JSON.stringify(data,null,2),'teampro_backup.json','application/json');
+  toast('📤 已匯出 JSON');
+}
+function importJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.account){ACCOUNT=d.account;StorageAdapter.save(DB_KEYS.account,ACCOUNT);}
+      if(d.reports){REPORTS=d.reports;StorageAdapter.save(DB_KEYS.reports,REPORTS);}
+      toast('📥 匯入成功');render('settings');
+    }catch(err){toast('❌ 檔案格式錯誤');}
+  };
+  reader.readAsText(file);
+}
+function clearData(){
+  showModal(`<h2>⚠️ 確認清除</h2><p>將清除所有回報紀錄與登入狀態（保留團隊基本資料），確定嗎？</p>
+    <div class="btn-row"><button class="btn gray" onclick="closeModal()">取消</button>
+    <button class="btn danger" onclick="doClear()">確認清除</button></div>`);
+}
+function doClear(){
+  REPORTS=[];StorageAdapter.save(DB_KEYS.reports,REPORTS);
+  closeModal();toast('🗑️ 已清除回報資料');render('settings');
+}
+function logout(){
+  StorageAdapter.save(DB_KEYS.session,false);
+  toast('已登出');go('landing');
+}
+function downloadFile(content,name,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+/* ---------------- 底部導覽 ---------------- */
+function BottomNav(active){
+  const items=[
+    ['dashboard','🏠','首頁'],
+    ['checkin','📝','打卡'],
+    ['records','📚','紀錄'],
+    ['coach','🎯','戰情室'],
+    ['reports','📈','報告'],
+    ['settings','⚙️','設定']
+  ];
+  return `<div class="bottomnav">${items.map(i=>
+    `<button class="${active===i[0]?'active':''}" onclick="go('${i[0]}')">
+      <span class="ic">${i[1]}</span>${i[2]}</button>`).join('')}</div>`;
+}
+
+/* ==================================================================
+   啟動：依登入狀態決定首頁
+   ================================================================== */
+(function init(){
+  const logged=StorageAdapter.load(DB_KEYS.session,false);
+  if(logged && ACCOUNT){ render('dashboard'); }
+  else { render('landing'); }
+})();
+</script>
+</body>
+</html>
