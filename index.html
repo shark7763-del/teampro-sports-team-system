@@ -160,6 +160,26 @@ textarea{min-height:70px;resize:vertical;}
 .parent-demo .pline{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px;}
 .parent-demo .pline:last-child{border:none;}
 .parent-demo .pe{font-size:20px;width:26px;text-align:center;}
+/* 為誰打造 卡片 */
+.who-card{display:flex;align-items:flex-start;gap:13px;background:#fff;border-radius:14px;padding:15px;margin:10px 14px;box-shadow:var(--shadow);}
+.who-card .we{font-size:28px;line-height:1.1;}
+.who-card .wtxt b{display:block;font-size:15px;color:var(--navy);margin-bottom:3px;}
+.who-card .wtxt span{font-size:12.5px;color:var(--muted);line-height:1.5;}
+/* 家長通知範例卡 */
+.notice-card{background:#fff;border-radius:16px;margin:12px 14px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line);}
+.notice-card .nhead{background:var(--card-soft);padding:11px 16px;font-weight:800;font-size:14px;color:var(--navy);border-bottom:1px solid var(--line);}
+.notice-card .nbody{padding:16px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;color:#334155;}
+.plan .fit{font-size:12.5px;color:#475569;margin-bottom:6px;background:var(--card-soft);padding:6px 10px;border-radius:8px;}
+/* 今日教練流程 */
+.flow-step{display:flex;align-items:center;gap:11px;padding:12px 8px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s;border-radius:10px;}
+.flow-step:last-child{border-bottom:none;}
+.flow-step:active{background:var(--card-soft);}
+.flow-step .fs-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.flow-step .fs-ic{font-size:20px;}
+.flow-step .fs-txt{flex:1;}
+.flow-step .fs-txt b{display:block;font-size:14.5px;color:var(--navy);}
+.flow-step .fs-txt span{font-size:12px;color:var(--muted);}
+.flow-step .fs-go{font-size:22px;color:var(--muted);}
 /* why 區塊 */
 .why-card{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
   border-radius:14px;padding:14px;margin:9px 14px;color:#fff;}
@@ -385,41 +405,58 @@ function Landing(){
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
       <button class="btn green" onclick="go('wizard')">🚀 免費建立團隊</button>
       <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
+      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="viewDemo()">▶️ 觀看系統展示</button>
       <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
   </div>
 
   <!-- 為誰打造 -->
   <div class="section-title">🎯 為誰打造</div>
-  <div class="chip-row">
-    ${[['🏫','體育班'],['🏅','校隊'],['🥋','道館'],['⚽','運動俱樂部'],['🏋️','訓練中心'],['☀️','暑期營隊'],['🖤','黑帶培訓班']]
-      .map(w=>`<span class="who-chip"><span class="e">${w[0]}</span>${w[1]}</span>`).join('')}
-  </div>
+  ${[['🏫','學校體育班','留下訓練紀錄、出席紀錄、輔導紀錄與成果報告'],
+     ['🏅','校隊／代表隊','掌握選手狀態、賽前風險與長期成長'],
+     ['🥋','道館／俱樂部','提升家長信任、增加續班率、建立專業品牌'],
+     ['🏋️','訓練中心／營隊','支援多項目、多教練、多學生管理']]
+    .map(w=>`<div class="who-card"><span class="we">${w[0]}</span><div class="wtxt"><b>${w[1]}</b><span>${w[2]}</span></div></div>`).join('')}
 
   <!-- 教練每天會看到什麼（戰情室卡片）-->
   <div class="section-title">📊 教練每天會看到什麼</div>
+  <p class="muted" style="margin:-2px 14px 8px;line-height:1.7">不用一個一個問，<b style="color:var(--blue)">系統自動幫教練整理出今天最需要處理的人。</b></p>
   <div class="card" style="padding:14px">
     <div class="war-grid">
-      <div class="war-card bl"><span class="we">✅</span><div class="wt">今日回報人數</div><div class="wn" style="color:var(--blue)">18</div></div>
-      <div class="war-card gr"><span class="we">📝</span><div class="wt">今日未回報</div><div class="wn" style="color:var(--muted)">4</div></div>
-      <div class="war-card rd"><span class="we">🔴</span><div class="wt">今日紅燈提醒</div><div class="wn" style="color:var(--red)">2</div></div>
-      <div class="war-card yl"><span class="we">🩹</span><div class="wt">今日受傷提醒</div><div class="wn" style="color:var(--yellow)">1</div></div>
-      <div class="war-card gr"><span class="we">📈</span><div class="wt">本週進步最多</div><div class="wn" style="font-size:18px;color:var(--green)">林小明 +0.8</div></div>
-      <div class="war-card rd"><span class="we">❤️</span><div class="wt">本週需關懷</div><div class="wn" style="font-size:18px;color:var(--red)">3 位</div></div>
+      <div class="war-card bl"><span class="we">✅</span><div class="wt">今日回報</div><div class="wn" style="color:var(--blue)">28 人</div></div>
+      <div class="war-card gr"><span class="we">📝</span><div class="wt">未回報</div><div class="wn" style="color:var(--muted)">4 人</div></div>
+      <div class="war-card rd"><span class="we">🔴</span><div class="wt">紅燈提醒</div><div class="wn" style="color:var(--red)">3 人</div></div>
+      <div class="war-card yl"><span class="we">🩹</span><div class="wt">受傷提醒</div><div class="wn" style="color:var(--yellow)">1 人</div></div>
+      <div class="war-card gr"><span class="we">📈</span><div class="wt">本週進步最多</div><div class="wn" style="font-size:18px;color:var(--green)">陳小宇</div></div>
+      <div class="war-card rd"><span class="we">❤️</span><div class="wt">本週需關懷</div><div class="wn" style="font-size:18px;color:var(--red)">王小明</div></div>
       <div class="war-card full bl"><div><div class="wt">一鍵產生家長通知</div><div class="wn" style="font-size:16px">把今日狀態一次傳給家長</div></div>
-        <button class="btn green sm" onclick="go('wizard')">立即體驗 →</button></div>
+        <button class="btn green sm" onclick="viewDemo()">立即體驗 →</button></div>
     </div>
   </div>
 
   <!-- 家長安心中心 -->
   <div class="section-title">👪 家長安心中心</div>
+  <h1 class="pain" style="font-size:21px;color:#fff;margin:0 14px 6px">讓家長看見孩子每天的努力</h1>
+  <p class="muted" style="margin:0 14px 10px;color:#c7d3ee;line-height:1.7">家長不是只想知道孩子有沒有上課，而是想知道孩子<b style="color:var(--cyan)">有沒有被看見、被提醒、被培養。</b></p>
   <div class="parent-demo">
-    <p class="muted" style="margin:0 0 10px;line-height:1.7">讓家長知道孩子不是只有來上課，<br>而是<b style="color:var(--blue)">每天都有被追蹤、被提醒、被培養</b>。</p>
-    <div class="pline"><span class="pe">🟢</span><span><b>孩子今日狀態</b> · 出席正常，狀態良好</span></div>
+    <div class="pline"><span class="pe">🟢</span><span><b>孩子今日訓練狀態</b> · 出席正常，狀態良好</span></div>
     <div class="pline"><span class="pe">⭐</span><span><b>本週努力亮點</b> · 專注力大幅提升</span></div>
     <div class="pline"><span class="pe">📣</span><span><b>教練提醒</b> · 注意睡眠，補足水分</span></div>
     <div class="pline"><span class="pe">🏠</span><span><b>回家建議</b> · 早點休息、均衡飲食</span></div>
     <div class="pline"><span class="pe">📅</span><span><b>本週成長報告</b> · KPI 平均 4.1，綠燈 4 次</span></div>
+    <div class="pline"><span class="pe">📋</span><span><b>出席紀錄</b> · 本週全勤，無缺席</span></div>
+  </div>
+  <!-- 家長通知範例卡片 -->
+  <div class="notice-card">
+    <div class="nhead">📩 家長通知範例</div>
+    <div class="nbody">【孩子今日訓練狀態】
+孩子：王小明
+今日狀態：🟡 黃燈，需要提醒
+
+今天有完成訓練，但疲勞偏高、水分不足。
+建議今晚提早休息，明天訓練前記得吃早餐。
+
+教練提醒：近期態度穩定，距離控制有進步。</div>
   </div>
 
   <!-- 為什麼選 TeamPro -->
@@ -428,7 +465,8 @@ function Landing(){
      ['🎯','建立學生自律習慣','每天打卡，養成自我追蹤'],
      ['🤝','增加家長信任','孩子被看見，續班率更高'],
      ['🗂️','留下完整訓練紀錄','每一次努力都有資料佐證'],
-     ['🏫','幫助學校成果報告','數據化呈現，報告更有力']]
+     ['🏫','幫助學校成果報告','數據化呈現，報告更有力'],
+     ['🥇','支援台灣常見運動項目','涵蓋體育班與亞奧運常見項目']]
     .map(w=>`<div class="why-card"><span class="we">${w[0]}</span><div class="wtxt"><b>${w[1]}</b><span>${w[2]}</span></div></div>`).join('')}
 
   <!-- 方案 -->
@@ -449,20 +487,61 @@ function Landing(){
 
 function PlanCard(p){
   const data={
-    start:{n:'Start 入門版',r:'開始建立每日回報習慣',price:PLAN_LIMITS.start.price,
-      feats:['今日訓練打卡','KPI 成長指標','身體狀態追蹤','營養狀態紀錄','紅黃綠燈判斷','一鍵 LINE 回報','資料儲存'],ft:false},
-    team:{n:'Team 團隊版',r:'讓教練真正掌握整支隊伍',price:PLAN_LIMITS.team.price,
-      feats:['包含 Start 全部','教練戰情室','學生名單管理','學生紀錄','一鍵家長通知','本週成長報告','個人趨勢圖','基礎匯出'],ft:true},
-    pro:{n:'Pro 菁英版',r:'完整運動團隊智慧管理平台',price:PLAN_LIMITS.pro.price,
-      feats:['包含 Team 全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','多隊伍管理','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
+    start:{n:'Start 入門版',r:'開始建立每日回報習慣',fit:'小型團隊、單一教練、剛開始導入數據管理',price:PLAN_LIMITS.start.price,
+      feats:['今日訓練打卡','選手成長指標','身體狀態追蹤','營養狀態追蹤','紅黃綠燈判斷','一鍵 LINE 回報','資料儲存'],ft:false},
+    team:{n:'Team 團隊版',r:'讓教練真正掌握整支隊伍',fit:'體育班、校隊、道館選手班、俱樂部',price:PLAN_LIMITS.team.price,
+      feats:['包含 Start 全部','教練戰情室','學生名單管理','學生紀錄','一鍵家長通知','本週成長報告','個人趨勢圖'],ft:true},
+    pro:{n:'Pro 菁英版',r:'完整智慧運動團隊管理平台',fit:'大型體育班、多教練團隊、多項目訓練中心、道館聯盟',price:PLAN_LIMITS.pro.price,
+      feats:['包含 Team 全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
   }[p];
   return `<div class="plan ${data.ft?'featured':''}">
     ${data.ft?'<div class="ribbon">最受歡迎</div>':''}
     <h3>${data.n}</h3>
     <div class="price">${data.price}</div>
-    <div class="role">${data.r}</div>
+    <div class="role">📌 定位：${data.r}</div>
+    <div class="fit">👥 適合：${data.fit}</div>
     <ul>${data.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
   </div>`;
+}
+
+/* 觀看系統展示：以 Pro 方案載入示範帳號＋示範資料後直接進 Dashboard */
+function viewDemo(){
+  ACCOUNT=demoAccount();
+  ACCOUNT.plan='pro';            // 展示時解鎖全部功能
+  ACCOUNT.teamName='示範跆拳道隊';
+  StorageAdapter.save(DB_KEYS.account,ACCOUNT);
+  if(REPORTS.length===0){ seedDemoReports(); }
+  toast('▶️ 已載入系統展示（Pro 全功能）');
+  loginSuccess();
+}
+// 產生示範回報資料，讓戰情室/報告有內容
+function seedDemoReports(){
+  const names=['陳小宇','王小明','林佳螢','張志豪','李宥蓁'];
+  const today=new Date();
+  const demo=[];
+  names.forEach((n,idx)=>{
+    for(let d=0; d<3; d++){
+      const date=new Date(today-d*864e5).toISOString().slice(0,10);
+      const base=3+ (idx%3) - d*0.2 + (n==='王小明'?-1.2:0);
+      const kpis=getKpiTemplate(); const scores={};
+      kpis.forEach(k=>scores[k]=Math.max(1,Math.min(5,Math.round(base+(Math.random()*1.4-0.7)))));
+      const vals=Object.values(scores); const total=vals.reduce((a,b)=>a+b,0); const avg=+(total/vals.length).toFixed(2);
+      let hi=kpis[0],lo=kpis[0]; kpis.forEach(k=>{if(scores[k]>scores[hi])hi=k; if(scores[k]<scores[lo])lo=k;});
+      const fatigue=n==='王小明'?5:(2+ (d%3));
+      const sleep=n==='王小明'?5.5:7;
+      const injury=(n==='張志豪'&&d===0)?'是':'否';
+      let light=avg>=4?'green':avg>=3?'yellow':'red';
+      if((fatigue===5||injury==='是'||sleep<6)&&light==='green')light='yellow';
+      demo.push({reportId:'D'+Date.now()+idx+''+d+Math.floor(Math.random()*999),teamId:ACCOUNT.teamName,date,studentName:n,
+        attendanceStatus:'正常出席',bodyStatus:n==='王小明'?'疲勞':'很好',sleepHours:sleep,fatigueLevel:fatigue,
+        injuryStatus:injury,injuryPart:injury==='是'?'腳踝':'',breakfast:'三明治',lunch:'便當',dinner:'家常菜',
+        waterAmount:n==='王小明'?'800ml':'2000ml',nightSnack:'否',kpiScores:scores,kpiAverage:avg,kpiTotal:total,
+        highestKpi:hi,lowestKpi:lo,trafficLight:light,studentReflection:'今天很努力',tomorrowGoal:'加強基本動作',
+        createdAt:new Date(today-d*864e5).toISOString()});
+    }
+  });
+  REPORTS=demo;
+  StorageAdapter.save(DB_KEYS.reports,REPORTS);
 }
 
 /* ---------------- 登入頁 ---------------- */
@@ -673,6 +752,8 @@ function Dashboard(){
     <button class="btn outline sm" style="margin-top:12px;width:100%" onclick="showPlanCompare()">📊 查看方案比較</button>
   </div>
 
+  ${TodayCoachFlow()}
+
   ${FeatureSection('📋 今日訓練',[
     ['daily_checkin','📝','今日訓練打卡','每日出席、狀態、飲食'],
     ['kpi_score','⭐','選手成長指標','KPI 1～5 分評分'],
@@ -702,6 +783,42 @@ function Dashboard(){
     ['research_export','🔬','運動數據資料庫','研究級匯出'],
   ])}
   <div style="height:30px"></div>`;
+}
+
+/* 登入後第一畫面：今日教練流程（5 步驟，含即時數字）*/
+function TodayCoachFlow(){
+  const today=new Date().toISOString().slice(0,10);
+  const todayR=REPORTS.filter(r=>r.date===today);
+  const red=todayR.filter(r=>r.trafficLight==='red').length;
+  const yellow=todayR.filter(r=>r.trafficLight==='yellow').length;
+  const green=todayR.filter(r=>r.trafficLight==='green').length;
+  const care=REPORTS.filter(r=>r.trafficLight==='red'||r.fatigueLevel>=5||r.injuryStatus==='是').length;
+  const demoRoster=['林小明','陳大華','王美麗','張志強','李雅婷'];
+  const filled=[...new Set(todayR.map(r=>r.studentName))];
+  const notFilled=demoRoster.filter(n=>!filled.includes(n)).length;
+  const steps=[
+    ['1','📝','查看今日未回報',`今日尚有 ${notFilled} 人未回報`,`go('coach')`],
+    ['2','🚦','查看紅黃綠燈名單',`🟢${green} 🟡${yellow} 🔴${red}`,`go('coach')`],
+    ['3','❤️','點選需關懷學生',`目前 ${care} 位需關懷`,`openCareFlow()`],
+    ['4','📢','產生家長通知','一鍵複製給家長',`openParentNotice()`],
+    ['5','📤','匯出今日紀錄','下載 CSV 留存',`exportCSV()`]
+  ];
+  return `<div class="section-title">🧭 今日教練流程</div>
+  <div class="card" style="padding:10px">
+    ${steps.map(s=>`<div class="flow-step" onclick="${s[4]}">
+      <span class="fs-num">${s[0]}</span>
+      <span class="fs-ic">${s[1]}</span>
+      <div class="fs-txt"><b>${s[2]}</b><span>${s[3]}</span></div>
+      <span class="fs-go">›</span>
+    </div>`).join('')}
+  </div>`;
+}
+// 流程：需關懷
+function openCareFlow(){ if(hasFeature('care_list')) showFeaturePreview('care_list'); else go('coach'); }
+// 流程：家長通知
+function openParentNotice(){
+  if(REPORTS.length===0){ toast('請先完成一筆今日打卡'); go('checkin'); return; }
+  showLineModal(REPORTS[0]);
 }
 
 function FeatureSection(title,feats){
