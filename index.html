@@ -186,6 +186,11 @@ textarea{min-height:70px;resize:vertical;}
 .care-row .cr-top{display:flex;justify-content:space-between;align-items:center;}
 .care-row .cr-name{font-weight:800;font-size:15px;}
 .care-row .cr-reason{font-size:12.5px;color:var(--muted);margin:4px 0 8px;}
+.todo-line{font-size:14px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--navy);}
+.todo-line:last-child{border-bottom:none;}
+.qa-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);gap:8px;}
+.qa-row:last-child{border-bottom:none;}
+.qa-row .qa-name{font-weight:600;font-size:14px;}
 /* 為誰打造 卡片 */
 .who-card{display:flex;align-items:flex-start;gap:13px;background:#fff;border-radius:14px;padding:15px;margin:10px 14px;box-shadow:var(--shadow);}
 .who-card .we{font-size:28px;line-height:1.1;}
@@ -334,9 +339,9 @@ function setTrialProgress(k){
    【2】權限設定 PERMISSIONS
    ================================================================== */
 const PLAN_LIMITS = {
-  start:{ name:'Start 入門版', students:30,  coaches:1,  price:'NT$1,500／月' },
-  team: { name:'Team 團隊版', students:80,  coaches:3,  price:'NT$4,000／月' },
-  pro:  { name:'Pro 菁英版',  students:200, coaches:10, price:'NT$8,000／月起' }
+  start:{ name:'Start 基礎版', students:30,  coaches:1,  price:'NT$1,500／月' },
+  team: { name:'Team 進階版', students:80,  coaches:3,  price:'NT$4,000／月' },
+  pro:  { name:'Pro 客製版',  students:200, coaches:10, price:'NT$8,000／月起' }
 };
 
 // 各功能所需的最低方案
@@ -378,23 +383,23 @@ function hasFeature(featureKey){
 
 // 升級價值說明
 const UPGRADE_VALUE = {
-  coach_dashboard:'教練戰情室屬於 Team 團隊版功能。升級後可以查看：<br>• 今日未回報<br>• 紅黃綠燈名單<br>• 出席狀態<br>• 受傷提醒<br>• 需關懷學生<br>• 一鍵家長通知<br>讓教練不用再靠記憶管理整支隊伍。',
-  roster_management:'升級 Team 團隊版後，可建立與管理完整學生名單，集中管理整支隊伍資料。',
-  student_history:'升級 Team 團隊版後，可查看每位學生的歷史回報紀錄與狀態變化。',
-  parent_notice:'升級 Team 團隊版後，可一鍵產生家長通知文字，快速讓家長掌握孩子狀況。',
-  weekly_report:'升級 Team 團隊版後，自動彙整本週訓練數據，產生成長報告。',
-  personal_trend:'升級 Team 團隊版後，可查看每位選手的 KPI 趨勢變化。',
-  basic_export:'升級 Team 團隊版後，可將回報資料匯出，方便保存與分析。',
-  parent_center:'升級 Pro 菁英版後，家長可登入查看孩子每日訓練狀態、出席紀錄、教練提醒與成長報告，提高家長信任與續班率。',
-  ai_assistant:'升級 Pro 菁英版後，系統可依據 KPI、出席、睡眠、疲勞與飲食紀錄，自動產生訓練建議、家長提醒與關懷名單。',
-  pregame_check:'升級 Pro 菁英版後，賽前可一鍵檢查選手戰力與身體狀態，降低帶傷出賽風險。',
-  monthly_report:'升級 Pro 菁英版後，自動產生月度成長檔案，完整呈現選手長期變化。',
-  multi_team:'升級 Pro 菁英版後，可同時管理多支隊伍與多個專項。',
-  role_permission:'升級 Pro 菁英版後，可設定不同教練與管理員的權限。',
-  care_list:'升級 Pro 菁英版後，系統自動列出需要關懷的選手名單。',
-  line_push:'升級 Pro 菁英版後，可自動透過 LINE 推播訓練回報與提醒。',
-  research_export:'升級 Pro 菁英版後，可匯出完整運動數據資料庫，支援研究與長期分析。',
-  weekly_star:'升級 Pro 菁英版後，系統自動選出本週之星，激勵選手持續努力。'
+  coach_dashboard:'教練戰情室屬於 Team 進階版功能。升級後可以查看：<br>• 今日未回報<br>• 紅黃綠燈名單<br>• 出席狀態<br>• 受傷提醒<br>• 需關懷學生<br>• 一鍵家長通知<br>讓教練不用再靠記憶管理整支隊伍。',
+  roster_management:'升級 Team 進階版後，可建立與管理完整學生名單，集中管理整支隊伍資料。',
+  student_history:'升級 Team 進階版後，可查看每位學生的歷史回報紀錄與狀態變化。',
+  parent_notice:'升級 Team 進階版後，可一鍵產生家長通知文字，快速讓家長掌握孩子狀況。',
+  weekly_report:'升級 Team 進階版後，自動彙整本週訓練數據，產生成長報告。',
+  personal_trend:'升級 Team 進階版後，可查看每位選手的 KPI 趨勢變化。',
+  basic_export:'升級 Team 進階版後，可將回報資料匯出，方便保存與分析。',
+  parent_center:'升級 Pro 客製版後，家長可登入查看孩子每日訓練狀態、出席紀錄、教練提醒與成長報告，提高家長信任與續班率。',
+  ai_assistant:'升級 Pro 客製版後，系統可依據 KPI、出席、睡眠、疲勞與飲食紀錄，自動產生訓練建議、家長提醒與關懷名單。',
+  pregame_check:'升級 Pro 客製版後，賽前可一鍵檢查選手戰力與身體狀態，降低帶傷出賽風險。',
+  monthly_report:'升級 Pro 客製版後，自動產生月度成長檔案，完整呈現選手長期變化。',
+  multi_team:'升級 Pro 客製版後，可同時管理多支隊伍與多個專項。',
+  role_permission:'升級 Pro 客製版後，可設定不同教練與管理員的權限。',
+  care_list:'升級 Pro 客製版後，系統自動列出需要關懷的選手名單。',
+  line_push:'升級 Pro 客製版後，可自動透過 LINE 推播訓練回報與提醒。',
+  research_export:'升級 Pro 客製版後，可匯出完整運動數據資料庫，支援研究與長期分析。',
+  weekly_star:'升級 Pro 客製版後，系統自動選出本週之星，激勵選手持續努力。'
 };
 
 /* ==================================================================
@@ -481,8 +486,9 @@ function Landing(){
   <div class="hero">
     <div class="hero-badge">🏆 TeamPro 智慧運動團隊管理系統</div>
     <h1 class="pain">教練不用再靠記憶<br>管理整支隊伍</h1>
-    <div class="desc" style="margin-top:4px">TeamPro 幫你自動整理學生出席、身體狀態、KPI 表現、飲食紀錄、紅黃綠燈與家長通知。</div>
+    <div class="desc" style="margin-top:4px">每天點名、通知家長、追蹤學生狀態，<br><b style="color:#fff">不該再靠記憶和 LINE 翻紀錄。</b><br>TeamPro 自動整理出席、專注度、體能、訓練表現、紅黃綠燈與家長通知。</div>
     <div class="slogan">「讓每一次訓練，都留下成長的證據。」</div>
+    <div class="muted" style="color:#9fe7f5;font-size:12.5px">🤖 像一位教練專屬的 AI 助理，幫你看見每位學生。</div>
     <div class="muted" style="color:#9fe7f5;font-size:13px;margin-bottom:4px">🎁 免費體驗 3 天，完成一次完整教練戰情室流程。</div>
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
       <button class="btn green" onclick="go('wizard')">🎁 免費體驗 3 天</button>
@@ -592,12 +598,15 @@ function Landing(){
 
 function PlanCard(p){
   const data={
-    start:{n:'Start 入門版',r:'開始建立每日回報習慣',fit:'小型團隊、單一教練、剛開始導入數據管理',price:PLAN_LIMITS.start.price,
+    start:{n:'Start 基礎版',r:'開始建立每日回報習慣',fit:'一般道館、小型團隊、單一教練',price:PLAN_LIMITS.start.price,
+      value:['幫教練省下手寫點名時間','學生狀態天天被記錄','建立每日回報習慣'],
       feats:['今日訓練打卡','選手成長指標','身體狀態追蹤','營養狀態追蹤','紅黃綠燈判斷','一鍵 LINE 回報','資料儲存'],ft:false},
-    team:{n:'Team 團隊版',r:'讓教練真正掌握整支隊伍',fit:'體育班、校隊、道館選手班、俱樂部',price:PLAN_LIMITS.team.price,
-      feats:['包含 Start 全部','教練戰情室','學生名單管理','學生紀錄','一鍵家長通知','本週成長報告','個人趨勢圖'],ft:true},
-    pro:{n:'Pro 菁英版',r:'完整智慧運動團隊管理平台',fit:'大型體育班、多教練團隊、多項目訓練中心、道館聯盟',price:PLAN_LIMITS.pro.price,
-      feats:['包含 Team 全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
+    team:{n:'Team 進階版',r:'讓教練真正掌握整支隊伍',fit:'校隊、選手班、體育班、俱樂部',price:PLAN_LIMITS.team.price,
+      value:['整隊狀態一眼掌握，不再漏看','一鍵家長通知，降低漏通知','家長更信任，提升續班率'],
+      feats:['包含基礎版全部','教練戰情室','學生名單管理','學生紀錄','一鍵家長通知','本週成長報告','個人趨勢圖'],ft:true},
+    pro:{n:'Pro 客製版',r:'完整智慧運動團隊管理平台',fit:'學校、道館、運動團隊、多教練多項目',price:PLAN_LIMITS.pro.price,
+      value:['AI 助理主動提醒需關心學生','完整月報支援成果報告','讓每位學生的努力都被看見'],
+      feats:['包含進階版全部','家長安心中心','AI 教練助理','賽前戰力檢查','月度成長檔案','權限管理','關懷提醒名單','LINE 自動推播','運動數據資料庫'],ft:false}
   }[p];
   return `<div class="plan ${data.ft?'featured':''}">
     ${data.ft?'<div class="ribbon">最受教練歡迎</div>':''}
@@ -605,6 +614,7 @@ function PlanCard(p){
     <div class="price">${data.price}</div>
     <div class="role">📌 定位：${data.r}</div>
     <div class="fit">👥 適合：${data.fit}</div>
+    <div style="margin:8px 0">${data.value.map(v=>`<div style="font-size:13px;color:var(--green);font-weight:600;margin:3px 0">✓ ${v}</div>`).join('')}</div>
     <ul>${data.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
   </div>`;
 }
@@ -964,31 +974,74 @@ function computeStats(dateStr){
     lowWater:todayR.filter(r=>waterMl(r.waterAmount)<1500).length
   };
 }
+// 只取「完整回報」（有 KPI 的，排除快速點名的最小紀錄）
+function fullReports(){ return REPORTS.filter(r=>r.kpiScores && Object.keys(r.kpiScores).length); }
+function groupByName(list){ const g={}; (list||fullReports()).forEach(r=>{(g[r.studentName]=g[r.studentName]||[]).push(r);});
+  Object.keys(g).forEach(n=>g[n].sort((a,b)=>new Date(b.date)-new Date(a.date))); return g; }
+
 /* 今日優先關心名單（含原因判斷） */
 function careList(){
-  const today=new Date().toISOString().slice(0,10);
-  const byName={};
-  REPORTS.forEach(r=>{ (byName[r.studentName]=byName[r.studentName]||[]).push(r); });
+  const byName=groupByName();
   const out=[];
   Object.keys(byName).forEach(n=>{
-    const list=byName[n].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const list=byName[n];
     const r=list[0];
     const reasons=[];
     if(r.injuryStatus==='是') reasons.push('受傷中');
     if(r.sleepHours<6) reasons.push('睡眠不足');
     if(r.fatigueLevel>=4) reasons.push('疲勞偏高');
     if(waterMl(r.waterAmount)<1500) reasons.push('水量不足');
-    // KPI 連續下降
     if(list.length>=2 && list[0].kpiAverage<list[1].kpiAverage &&
        (list.length<3 || list[1].kpiAverage<=list[2].kpiAverage)) reasons.push('KPI 連續下降');
     if(r.trafficLight==='red' && reasons.length===0) reasons.push('整體狀態紅燈');
     if(reasons.length){
-      // 嚴重度排序：紅燈>受傷>其他
       const sev=(r.trafficLight==='red'?3:0)+(r.injuryStatus==='是'?2:0)+reasons.length;
-      out.push({name:n, light:r.trafficLight, reason:reasons.join('＋'), reportId:r.reportId, sev});
+      out.push({name:n, light:r.light||r.trafficLight, reason:reasons.join('＋'), reportId:r.reportId, sev});
     }
   });
   return out.sort((a,b)=>b.sev-a.sev);
+}
+/* 今日出席統計 */
+function attendanceSummary(dateStr){
+  const date=dateStr||new Date().toISOString().slice(0,10);
+  const todayR=REPORTS.filter(r=>r.date===date);
+  return {
+    present:todayR.filter(r=>r.attendanceStatus==='正常出席').length,
+    leave:todayR.filter(r=>r.attendanceStatus==='請假').length,
+    late:todayR.filter(r=>r.attendanceStatus==='遲到').length,
+    early:todayR.filter(r=>r.attendanceStatus==='早退').length,
+    issues:todayR.filter(r=>r.attendanceStatus && r.attendanceStatus!=='正常出席')
+  };
+}
+/* 狀態下滑學生（最近 KPI 低於前一次） */
+function decliningStudents(){
+  const g=groupByName(); const out=[];
+  Object.keys(g).forEach(n=>{ const l=g[n];
+    if(l.length>=2 && l[0].kpiAverage<l[1].kpiAverage)
+      out.push({name:n, drop:+(l[1].kpiAverage-l[0].kpiAverage).toFixed(1), now:l[0].kpiAverage, reportId:l[0].reportId});
+  });
+  return out.sort((a,b)=>b.drop-a.drop);
+}
+/* 本週進步學生（最近 KPI 高於前一次） */
+function improvingStudents(){
+  const g=groupByName(); const out=[];
+  Object.keys(g).forEach(n=>{ const l=g[n];
+    if(l.length>=2 && l[0].kpiAverage>l[1].kpiAverage)
+      out.push({name:n, up:+(l[0].kpiAverage-l[1].kpiAverage).toFixed(1), now:l[0].kpiAverage, reportId:l[0].reportId});
+  });
+  return out.sort((a,b)=>b.up-a.up);
+}
+/* 今日教練待辦 */
+function todayTodos(){
+  const s=computeStats(); const att=attendanceSummary(); const cares=careList();
+  const todos=[];
+  if(s.notReported>0) todos.push(`提醒 ${s.notReported} 位學生完成今日回報`);
+  if(att.late+att.leave+att.early>0) todos.push(`追蹤 ${att.late} 位遲到、${att.leave} 位請假、${att.early} 位早退`);
+  if(s.red>0) todos.push(`個別關心 ${s.red} 位紅燈學生`);
+  if(s.injured>0) todos.push(`留意 ${s.injured} 位受傷學生的訓練量`);
+  if(cares.length) todos.push(`為 ${cares.length} 位需關心學生產生家長通知`);
+  if(todos.length===0) todos.push('今日狀態良好，給選手一句鼓勵吧！');
+  return todos;
 }
 
 /* ===== 3 天體驗進度卡 ===== */
@@ -1024,9 +1077,9 @@ function TrialExpiredBanner(){
   if(!TRIAL || !TRIAL.active || trialDay()!=='expired') return '';
   return `<div class="card" style="border:2px solid var(--red)">
     <h3 style="margin:0 0 6px;color:var(--red)">⏰ 你的 3 天教練戰情室體驗已結束</h3>
-    <p class="muted" style="margin:0 0 8px;line-height:1.7">升級 Team 團隊版後，可繼續使用：教練戰情室、一鍵家長通知、本週成長報告、學生趨勢紀錄、紅黃綠燈名單整理。</p>
+    <p class="muted" style="margin:0 0 8px;line-height:1.7">升級 Team 進階版後，可繼續使用：教練戰情室、一鍵家長通知、本週成長報告、學生趨勢紀錄、紅黃綠燈名單整理。</p>
     <div class="btn-row">
-      <button class="btn green" onclick="changePlanAndExit('team')">立即升級 Team 團隊版</button>
+      <button class="btn green" onclick="changePlanAndExit('team')">立即升級 Team 進階版</button>
       <button class="btn outline" onclick="showPlanCompare()">查看方案比較</button>
     </div>
   </div>`;
@@ -1063,7 +1116,7 @@ function CoachWarRoomCard(){
     return `<div class="section-title">🎯 今日教練戰情室</div>
     <div class="card center" style="border:1px dashed var(--line)">
       <div style="font-size:34px">🔒</div>
-      <p class="muted">教練戰情室為 Team 團隊版功能，升級後可一眼掌握整隊狀態。</p>
+      <p class="muted">教練戰情室為 Team 進階版功能，升級後可一眼掌握整隊狀態。</p>
       <button class="btn green sm" style="width:100%" onclick="showUpgrade('coach_dashboard','教練戰情室')">查看升級價值</button>
     </div>`;
   }
@@ -1078,22 +1131,53 @@ function CoachWarRoomCard(){
     </div>`;
   }
   const s=computeStats();
+  const att=attendanceSummary();
   const cares=careList();
-  const todayCares=cares.filter(c=>s.todayR.some(r=>r.studentName===c.name));
-  const cells=[
-    ['✅','今日回報',s.reported,'var(--blue)'],['📝','今日未回報',s.notReported,'var(--muted)'],
-    ['🟢','綠燈',s.green,'var(--green)'],['🟡','黃燈',s.yellow,'var(--yellow)'],
-    ['🔴','紅燈',s.red,'var(--red)'],['🩹','受傷提醒',s.injured,'var(--yellow)'],
-    ['😴','睡眠不足',s.lowSleep,'var(--blue)'],['💧','水量不足',s.lowWater,'var(--blue)']
-  ];
+  const declining=decliningStudents();
+  const improving=improvingStudents();
+  const todos=todayTodos();
   return `<div class="section-title">🎯 今日教練戰情室</div>
   <p class="muted" style="margin:-2px 14px 6px;line-height:1.6">不用一個一個問，<b style="color:var(--blue)">TeamPro 自動幫教練整理出今天最需要處理的人。</b></p>
-  <div class="card" style="padding:12px">
-    <div class="war-grid" style="grid-template-columns:1fr 1fr">
-      ${cells.map(c=>`<div class="war-card"><span class="we">${c[0]}</span><div class="wt">${c[1]}</div><div class="wn" style="color:${c[3]}">${c[2]}</div></div>`).join('')}
+
+  <!-- 今日出席狀況 + 快速點名 -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <b>📋 今日出席狀況</b>
+      <button class="btn green sm" onclick="quickAttendance()">⚡ 快速點名</button>
+    </div>
+    <div class="war-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+      <div class="war-card" style="padding:10px 4px"><div class="wt">出席</div><div class="wn" style="font-size:20px;color:var(--green)">${att.present}</div></div>
+      <div class="war-card" style="padding:10px 4px"><div class="wt">遲到</div><div class="wn" style="font-size:20px;color:var(--yellow)">${att.late}</div></div>
+      <div class="war-card" style="padding:10px 4px"><div class="wt">請假</div><div class="wn" style="font-size:20px;color:var(--muted)">${att.leave}</div></div>
+      <div class="war-card" style="padding:10px 4px"><div class="wt">未回報</div><div class="wn" style="font-size:20px;color:var(--red)">${s.notReported}</div></div>
     </div>
   </div>
-  <div class="section-title" style="font-size:14px">❤️ 今日優先關心名單</div>
+
+  <!-- 缺席與遲到提醒 -->
+  <div class="card">
+    <b>⏰ 缺席與遲到提醒</b>
+    ${att.issues.length? att.issues.map(r=>`<div class="report-item" ${r.kpiScores?`onclick="showRecordDetail('${r.reportId}')"`:''}>
+      <div><b>${r.studentName}</b><div class="muted">${r.date}</div></div>
+      <span class="tag ${r.attendanceStatus==='請假'?'gray':'yellow'}">${r.attendanceStatus}</span></div>`).join('')
+      : '<p class="muted" style="margin:8px 0 0">今日全員準時出席 ✅</p>'}
+  </div>
+
+  <!-- 狀態下滑 / 本週進步 -->
+  <div class="grid2" style="margin:0 14px">
+    <div class="card" style="margin:0">
+      <b style="color:var(--red)">📉 狀態下滑</b>
+      ${declining.length? declining.slice(0,4).map(d=>`<div style="font-size:13px;margin-top:6px">${d.name} <span class="muted">KPI ${d.now}（↓${d.drop}）</span></div>`).join('')
+        : '<p class="muted" style="margin:6px 0 0;font-size:13px">無明顯下滑 👍</p>'}
+    </div>
+    <div class="card" style="margin:0">
+      <b style="color:var(--green)">📈 本週進步</b>
+      ${improving.length? improving.slice(0,4).map(d=>`<div style="font-size:13px;margin-top:6px">${d.name} <span class="muted">KPI ${d.now}（↑${d.up}）</span></div>`).join('')
+        : '<p class="muted" style="margin:6px 0 0;font-size:13px">尚無資料</p>'}
+    </div>
+  </div>
+
+  <!-- 需要通知家長的學生 -->
+  <div class="section-title" style="font-size:14px">❤️ 需要通知家長的學生</div>
   <div class="card">
     ${cares.length? `${cares.slice(0,8).map((c,i)=>`<div class="care-row ${c.light==='yellow'?'yl':''}">
       <div class="cr-top"><span class="cr-name">${i+1}. ${c.name} ${lightDot(c.light)}</span>
@@ -1104,9 +1188,63 @@ function CoachWarRoomCard(){
         <button class="btn outline sm" onclick="showRecordDetail('${c.reportId}')">📄 查看紀錄</button>
       </div>
     </div>`).join('')}
-    ${(s.yellow+s.red)>0?`<button class="btn green" style="margin-top:10px" onclick="generateAllTodayNotices()">📲 一鍵產生今日家長通知（${s.yellow+s.red} 則）</button>`:''}`
+    <button class="btn green" style="margin-top:10px" onclick="generateAllTodayNotices()">📲 一鍵產生今日家長通知</button>`
     : '<p class="muted center">目前沒有需要特別關心的學生 ✅<br>載入示範資料即可看到完整效果。</p>'}
+  </div>
+
+  <!-- 今日教練待辦 -->
+  <div class="card">
+    <b>✅ 今日教練待辦事項</b>
+    ${todos.map(t=>`<div class="todo-line">▢ ${t}</div>`).join('')}
   </div>`;
+}
+/* 一鍵產生今日所有黃／紅燈學生的家長通知 */
+function generateAllTodayNotices(){
+  // 取今日黃/紅燈完整紀錄；若今日無，改用最近的需關心名單
+  const today=new Date().toISOString().slice(0,10);
+  let targets=fullReports().filter(r=>r.date===today && (r.trafficLight==='yellow'||r.trafficLight==='red'));
+  if(targets.length===0){ targets=careList().slice(0,8).map(c=>REPORTS.find(r=>r.reportId===c.reportId)).filter(Boolean); }
+  if(targets.length===0){ toast('目前沒有需要通知的學生'); return; }
+  const blocks=targets.map(r=>buildParentNotice(r,reasonFor(r.reportId),'improve'));
+  targets.forEach(r=>recordNotice(r));
+  const allText=blocks.join('\n\n———————————\n\n');
+  showModal(`<h2>📲 今日家長通知（${targets.length} 則）</h2>
+    <p class="muted">已整理需要通知的學生，可一次複製或逐則複製。</p>
+    <button class="btn" onclick='copyText(document.getElementById("all-notice").textContent,"已複製 ${targets.length} 則家長通知，可以直接貼到 LINE。")'>📋 一次複製全部</button>
+    <div class="copybox" id="all-notice" style="margin-top:10px;max-height:320px;overflow:auto">${allText}</div>
+    <button class="btn outline" style="margin-top:10px" onclick="closeModal()">關閉</button>`);
+}
+
+/* ===== 快速點名（2 步完成：開啟 → 點狀態）===== */
+function quickAttendance(){
+  let roster=[...new Set(REPORTS.filter(r=>r.quick||r.kpiScores).map(r=>r.studentName))];
+  if(roster.length===0) roster=['王小明','李小華','陳小宇','張小安','林小偉','黃小婷','劉小杰','蔡小妤'];
+  window.__qaRoster=roster;
+  showModal(`<h2>⚡ 快速點名</h2>
+    <p class="muted">點一下即完成，今日狀態即時更新。</p>
+    <div id="qa-list">${roster.map(n=>quickAttRow(n)).join('')}</div>
+    <button class="btn" style="margin-top:10px" onclick="closeModal();go('dashboard')">完成點名</button>`);
+}
+function quickAttRow(name){
+  const today=new Date().toISOString().slice(0,10);
+  const r=REPORTS.find(x=>x.studentName===name && x.date===today);
+  const cur=r?r.attendanceStatus:'';
+  const btn=(label,val,cls)=>`<button class="btn ${cur===val?cls:'outline'} sm" style="padding:7px 10px" onclick="setAttendance('${name}','${val}')">${label}</button>`;
+  return `<div class="qa-row"><span class="qa-name">${name}${cur?` <span class="muted">· ${cur}</span>`:''}</span>
+    <div style="display:flex;gap:5px">${btn('出席','正常出席','green')}${btn('遲到','遲到','')}${btn('請假','請假','gray')}</div></div>`;
+}
+function setAttendance(name,status){
+  const today=new Date().toISOString().slice(0,10);
+  let r=REPORTS.find(x=>x.studentName===name && x.date===today);
+  if(r){ r.attendanceStatus=status; }
+  else { REPORTS.unshift({reportId:'Q'+Date.now()+Math.floor(Math.random()*9999),teamId:ACCOUNT.teamName,
+    date:today, studentName:name, attendanceStatus:status, trafficLight:'none', quick:true,
+    createdAt:new Date().toISOString()}); }
+  StorageAdapter.save(DB_KEYS.reports,REPORTS);
+  // 即時重繪清單
+  const list=document.getElementById('qa-list');
+  if(list && window.__qaRoster){ list.innerHTML=window.__qaRoster.map(n=>quickAttRow(n)).join(''); }
+  toast('✅ '+name+'：'+status);
 }
 /* 一鍵產生今日所有黃／紅燈學生的家長通知 */
 function generateAllTodayNotices(){
@@ -1176,8 +1314,36 @@ function loadDemoTeam(){
 }
 function changePlanAndExit(p){ ACCOUNT.plan=p; StorageAdapter.save(DB_KEYS.account,ACCOUNT); TRIAL=TRIAL?{...TRIAL,active:false}:TRIAL; if(TRIAL)StorageAdapter.save(DB_KEYS.trial,TRIAL); toast('已升級為 '+PLAN_LIMITS[p].name); go('dashboard'); }
 
-/* ===== 一鍵家長通知（含原因）===== */
-function buildParentNotice(r,reason){
+/* ===== 一鍵家長通知（三種模板，溫暖／專業／具體）===== */
+// type: positive 正向鼓勵 / improve 提醒改善 / trial 三天體驗成果
+function buildParentNotice(r,reason,type){
+  const team=ACCOUNT?ACCOUNT.teamName:'本隊';
+  const sign=`\n\n— ${team} 教練團隊（由 TeamPro 協助整理）`;
+  if(type==='positive'){
+    return `親愛的家長您好：
+
+今天 ${r.studentName} 在訓練中表現很棒！👏
+本日狀態：${lightEmoji(r.trafficLight)} 整體穩定
+亮點：${r.highestKpi||'專注與態度'}有明顯表現，訓練態度認真。
+
+孩子正一步步進步，謝謝您在家的支持與陪伴。
+我們會持續陪著孩子一起成長。${sign}`;
+  }
+  if(type==='trial'){
+    const g=groupByName()[r.studentName]||[r];
+    const avg=(g.reduce((s,x)=>s+(x.kpiAverage||0),0)/g.length).toFixed(1);
+    return `親愛的家長您好：
+
+這是 ${r.studentName} 最近三天的訓練回顧 📋
+・出席：${g.length} 次訓練紀錄
+・平均表現：KPI ${avg}（滿分 5）
+・最佳項目：${r.highestKpi||'—'}
+・可加強：${r.lowestKpi||'—'}
+
+孩子的每一次努力，我們都有看見並記錄下來。
+若想了解完整成長報告，歡迎與教練聯繫。${sign}`;
+  }
+  // improve 提醒改善版（預設）
   return `【孩子今日訓練狀態】
 
 孩子：${r.studentName}
@@ -1190,22 +1356,39 @@ ${reason||'整體狀態良好，請持續鼓勵。'}
 今天有完成訓練，但狀態需要稍微調整。建議今晚提早休息，明天訓練前補充早餐與水分。
 
 回家建議：
-請協助孩子早點休息，避免含糖飲料與宵夜，明天訓練前記得補充早餐。`;
+請協助孩子早點休息，避免含糖飲料與宵夜，明天訓練前記得補充早餐與水分。${sign}`;
 }
 function reasonFor(reportId){ const c=careList().find(x=>x.reportId===reportId); return c?c.reason:''; }
 function showParentNoticeModal(reportId){
   const r=REPORTS.find(x=>x.reportId===reportId); if(!r){toast('找不到紀錄');return;}
-  const text=buildParentNotice(r,reasonFor(reportId));
+  const reason=reasonFor(reportId);
+  window.__pnTpl={
+    improve:buildParentNotice(r,reason,'improve'),
+    positive:buildParentNotice(r,reason,'positive'),
+    trial:buildParentNotice(r,reason,'trial')
+  };
+  // 預設依燈號：綠燈→正向鼓勵，否則→提醒改善
+  const def=(r.trafficLight==='green')?'positive':'improve';
   recordNotice(r);
-  showModal(`<h2>📢 家長通知</h2><p class="muted">${r.studentName} · ${r.date} · ${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}</p>
-    <div class="copybox" id="pn-text">${text}</div>
+  showModal(`<h2>📢 一鍵家長通知</h2><p class="muted">${r.studentName} · ${r.date} · ${lightEmoji(r.trafficLight)} ${trafficText(r.trafficLight)}</p>
+    <div class="chips" id="tpl-tabs" style="margin-bottom:8px">
+      <span class="chip ${def==='positive'?'active':''}" onclick="switchTpl(this,'positive')">😊 正向鼓勵版</span>
+      <span class="chip ${def==='improve'?'active':''}" onclick="switchTpl(this,'improve')">📋 提醒改善版</span>
+      <span class="chip" onclick="switchTpl(this,'trial')">🏆 三天成果版</span>
+    </div>
+    <div class="copybox" id="pn-text">${window.__pnTpl[def]}</div>
     <button class="btn" onclick='copyText(document.getElementById("pn-text").textContent,"已複製家長通知，可以直接貼到 LINE。")'>📋 複製 LINE 文字</button>
     <button class="btn outline" style="margin-top:8px" onclick="closeModal()">關閉</button>`);
+}
+function switchTpl(el,type){
+  document.querySelectorAll('#tpl-tabs .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pn-text').textContent=window.__pnTpl[type];
 }
 function copyParentNotice(reportId){
   const r=REPORTS.find(x=>x.reportId===reportId); if(!r){toast('找不到紀錄');return;}
   recordNotice(r);
-  copyText(buildParentNotice(r,reasonFor(reportId)),'已複製家長通知，可以直接貼到 LINE。');
+  copyText(buildParentNotice(r,reasonFor(reportId),'improve'),'已複製家長通知，可以直接貼到 LINE。');
 }
 function recordNotice(r){
   NOTICES.push({studentName:r.studentName,date:r.date,light:r.trafficLight,createdAt:new Date().toISOString()});
@@ -1325,6 +1508,14 @@ function showUpgrade(key,name){
 /* 方案比較 Modal */
 function showPlanCompare(){
   showModal(`<h2>📊 方案比較</h2>
+    <div class="plan featured" style="margin:8px 0;background:linear-gradient(135deg,var(--navy2),var(--blue));color:#fff">
+      <div class="ribbon" style="background:var(--green)">先免費試用</div>
+      <h3 style="color:#fff">🎁 免費三天體驗</h3>
+      <div class="price" style="color:#fff">NT$0</div>
+      <div style="font-size:13px;opacity:.92;line-height:1.8">完成一次完整教練戰情室流程：<br>快速點名 → 產生家長通知 → 3 日成果報告，<br>親自體驗能幫你省下多少時間。</div>
+      <button class="btn" style="margin-top:10px;background:#fff;color:var(--blue)" onclick="closeModal();go('wizard')">立即開始免費體驗</button>
+    </div>
+    <p class="muted center" style="margin:6px 0">— 體驗後可選擇以下方案 —</p>
     ${['start','team','pro'].map(p=>PlanCard(p)).join('').replace(/margin:12px 14px/g,'margin:12px 0')}
     <button class="btn" onclick="closeModal()">關閉</button>`);
 }
@@ -1675,6 +1866,7 @@ function TrialReportBlock(){
   });
   const cares=careList();
   if(cares.length) worst=cares[0].name;
+  const improved=improvingStudents();
   // 省時估算
   const savedMinutes=total*1 + noticeCount*3 + (red+yellow)*2;
 
@@ -1696,6 +1888,7 @@ function TrialReportBlock(){
     <div class="info-line"><span class="k">📢 產生家長通知次數</span><span class="v">${noticeCount}</span></div>
     <div class="info-line"><span class="k">⭐ 最穩定學生</span><span class="v">${stable}</span></div>
     <div class="info-line"><span class="k">❤️ 最需要關懷學生</span><span class="v">${worst}</span></div>
+    <div class="info-line"><span class="k">📈 有進步的學生</span><span class="v">${improved.length?improved.slice(0,3).map(x=>x.name+'（↑'+x.up+'）').join('、'):'—'}</span></div>
   </div>
   <div class="cta-band">
     <h3>你已完成 3 天 TeamPro 教練戰情室體驗</h3>
@@ -1705,10 +1898,16 @@ function TrialReportBlock(){
     • ${yellow} 次黃燈提醒<br>
     • ${noticeCount} 則家長通知<br>
     • ${careCount} 位需關懷學生<br>
+    • ${improved.length} 位學生有進步<br>
     • 預估節省 <b>${savedMinutes} 分鐘</b>整理時間</p>
     <p style="font-size:12px;opacity:.85">每筆回報省 1 分鐘・每則家長通知省 3 分鐘・每次紅黃燈整理省 2 分鐘</p>
-    <button class="btn" style="background:#fff;color:var(--blue)" onclick="changePlanAndExit('team')">升級 Team 團隊版</button>
-    <button class="btn ghost" style="margin-top:8px;border-color:#fff" onclick="changePlanAndExit('start')">繼續使用 Start 入門版</button>
+    <div class="card" style="margin:0 0 12px;background:rgba(255,255,255,.12);color:#fff;text-align:left">
+      <b>🔓 升級後可解鎖：</b>
+      <div style="font-size:13px;line-height:1.9;margin-top:4px">• 完整月度成長檔案<br>• 選手 KPI 長期追蹤趨勢<br>• AI 教練助理訓練建議<br>• 教練戰情室與一鍵家長通知（持續使用）</div>
+    </div>
+    <button class="btn" style="background:#fff;color:var(--blue)" onclick="changePlanAndExit('team')">升級 Team 進階版</button>
+    <button class="btn ghost" style="margin-top:8px;border-color:#fff" onclick="showPlanCompare()">查看方案比較</button>
+    <button class="btn ghost" style="margin-top:8px;border-color:#fff" onclick="changePlanAndExit('start')">繼續使用 Start 基礎版</button>
   </div>`;
 }
 
@@ -1755,7 +1954,7 @@ function ReportsPage(){
       ? (star?`<div class="center"><div style="font-size:40px">🌟</div><h2>${star.studentName}</h2>
           <p class="muted">本週最高 KPI 平均 ${star.kpiAverage}（${star.date}）</p></div>`
         :'<p class="muted">本週尚無資料</p>')
-      : `<p class="muted">🔒 升級 Pro 菁英版後，系統自動選出本週之星。</p>
+      : `<p class="muted">🔒 升級 Pro 客製版後，系統自動選出本週之星。</p>
          <button class="btn sm green" onclick="showUpgrade('weekly_star','本週之星')">升級解鎖</button>`}
   </div>
 
