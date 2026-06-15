@@ -519,7 +519,7 @@ function Landing(){
     <div class="muted" style="color:#9fe7f5;font-size:13px;margin-bottom:4px">🎁 免費體驗 3 天，完成一次完整教練戰情室流程。</div>
     <div style="display:flex;flex-direction:column;gap:10px;padding:6px 8px 0;">
       <button class="btn green" onclick="go('wizard')">🎁 免費體驗 3 天</button>
-      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="landingLoadDemo()">📥 載入示範資料</button>
+      <button class="btn" style="background:rgba(34,211,238,.18);color:var(--cyan);border:1px solid rgba(34,211,238,.5);box-shadow:none" onclick="landingLoadDemo()">▶️ 觀看系統展示</button>
       <button class="btn ghost" onclick="showPlanCompare()">💎 查看方案</button>
       <button class="btn ghost sm" style="opacity:.85" onclick="go('login')">已有帳號？登入系統</button>
     </div>
@@ -1119,13 +1119,16 @@ function FirstUseTasksCard(){
   const t2=REPORTS.some(r=>r.date===today);
   const t3=NOTICES.length>0;
   if(t1&&t2&&t3) return ''; // 全部完成後收起
+  const task1Btns = DEV
+    ? [['選手名單管理',`go('settings')`,'outline'],['載入示範資料',`loadDemoTeam()`,'green']]
+    : [['選手名單管理',`go('settings')`,'outline'],['啟用線上回報',`go('settings')`,'green']];
   const tasks=[
-    [t1,'1','新增學生或載入示範校隊資料',[['新增學生',`go('checkin')`,'outline'],['載入示範資料',`loadDemoTeam()`,'green']]],
+    [t1,'1','建立選手名單',task1Btns],
     [t2,'2','完成今日訓練打卡',[['開始今日打卡',`go('checkin')`,'']]],
     [t3,'3','查看紅黃綠燈與家長通知',[['查看戰情室',`go('coach')`,'']]]
   ];
   return `<div class="card" style="border:2px solid var(--blue)">
-    <h3 style="margin:0 0 2px">🚀 今天只要完成 3 件事</h3>
+    <h3 style="margin:0 0 2px">🚀 三步驟，立刻上手</h3>
     <p class="muted" style="margin:0 0 6px">跟著做一次，立刻體驗教練戰情室。</p>
     ${tasks.map(t=>`<div class="task-row ${t[0]?'done':''}">
       <span class="tk-num">${t[0]?'✓':t[1]}</span>
@@ -1147,14 +1150,15 @@ function CoachWarRoomCard(){
       <button class="btn green sm" style="width:100%" onclick="showUpgrade('coach_dashboard','教練戰情室')">查看升級價值</button>
     </div>`;
   }
-  // 完全沒有資料 → 引導載入示範資料，不要空白
+  // 完全沒有資料 → 引導開始使用（正式畫面不提示示範資料）
   if(REPORTS.length===0){
     return `<div class="section-title">🎯 今日教練戰情室</div>
     <div class="card center">
       <div style="font-size:40px">📭</div>
-      <p class="muted" style="line-height:1.7">目前尚未有今日回報資料。<br>你可以先載入示範資料，立即體驗教練戰情室效果。</p>
-      <button class="btn green" onclick="loadDemoTeam()">📥 載入示範資料</button>
-      <button class="btn outline" style="margin-top:8px" onclick="go('checkin')">📝 開始今日訓練打卡</button>
+      <p class="muted" style="line-height:1.7">目前尚未有今日回報資料。<br>開始今日打卡或啟用線上回報，戰情室就會自動整理出來。</p>
+      <button class="btn green" onclick="go('checkin')">📝 開始今日訓練打卡</button>
+      <button class="btn outline" style="margin-top:8px" onclick="go('settings')">🌐 啟用線上回報</button>
+      ${DEV?`<button class="btn ghost" style="margin-top:8px" onclick="loadDemoTeam()">📥 載入示範資料（開發）</button>`:''}
     </div>`;
   }
   const s=computeStats();
@@ -2033,31 +2037,21 @@ function exportCSV(){
 }
 
 /* ==================================================================
-   【6】系統設定（測試展示用）
+   【6】系統設定 — 正式畫面乾淨，測試工具收進開發者模式
+   開發者模式：點設定頁標題 5 下開啟（DEV 旗標存 localStorage）
    ================================================================== */
+let DEV = localStorage.getItem('teampro_dev')==='1';
+let __devTap=0, __devTimer=null;
+function devTapTitle(){
+  __devTap++;
+  clearTimeout(__devTimer); __devTimer=setTimeout(()=>__devTap=0,1500);
+  if(__devTap>=5){ __devTap=0; DEV=!DEV; localStorage.setItem('teampro_dev',DEV?'1':'0');
+    toast(DEV?'🛠️ 開發者模式：開':'開發者模式：關'); render('settings'); }
+}
 function SettingsPage(){
   return `
-  <div class="topbar"><div><h1>⚙️ 系統設定</h1><div class="sub">測試展示工具</div></div>
+  <div class="topbar"><div><h1 onclick="devTapTitle()">⚙️ 系統設定</h1><div class="sub">帳號與線上回報</div></div>
     <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
-
-  <div class="section-title">🏷️ 切換目前方案（測試權限）</div>
-  <div class="card">
-    <div class="chips">
-      ${['start','team','pro'].map(p=>`<span class="chip ${currentPlan()===p?'active':''}" onclick="changePlan('${p}')">${PLAN_LIMITS[p].name}</span>`).join('')}
-    </div>
-    <p class="muted" style="margin-top:10px">切換後回 Dashboard 即可看到功能解鎖／鎖定變化。</p>
-  </div>
-
-  <div class="section-title">🎁 3 天體驗測試</div>
-  <div class="card">
-    <p class="muted" style="margin:0 0 8px">目前體驗狀態：<b>${TRIAL&&TRIAL.active?(trialDayLabel()+'（剩 '+trialDaysLeft()+' 天）'):'未啟用'}</b></p>
-    <button class="btn outline sm" style="width:100%" onclick="loadDemoTeam()">📥 載入示範校隊資料（10 人 × 3 天）</button>
-    <div class="btn-row" style="margin-top:8px">
-      <button class="btn outline sm" onclick="restartTrial()">🔄 重新開始體驗</button>
-      <button class="btn gray sm" onclick="simulateExpire()">⏩ 模擬體驗到期</button>
-    </div>
-    <p class="muted" style="margin-top:8px;font-size:12px">「模擬到期」會把體驗起始日往前調 3 天，方便測試到期鎖定畫面。</p>
-  </div>
 
   <div class="section-title">🌐 線上回報（選手填寫／家長查閱）</div>
   <div class="card">
@@ -2083,13 +2077,29 @@ function SettingsPage(){
     <button class="btn sm" style="margin-top:12px;width:100%" onclick="saveTeam()">儲存修改</button>
   </div>
 
-  <div class="section-title">💾 資料管理</div>
+  <div class="section-title">💾 資料備份</div>
   <div class="card">
-    <button class="btn outline" onclick="exportJSON()">📤 匯出 JSON 備份</button>
+    <button class="btn outline" onclick="exportJSON()">📤 匯出資料備份</button>
     <label class="btn outline" style="margin-top:8px;display:block;text-align:center;cursor:pointer">
-      📥 匯入 JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
-    <button class="btn danger" style="margin-top:8px" onclick="clearData()">🗑️ 清除所有測試資料</button>
+      📥 匯入資料備份<input type="file" accept=".json" style="display:none" onchange="importJSON(event)"></label>
   </div>
+
+  ${DEV?`
+  <div class="section-title">🛠️ 開發者模式（測試工具）</div>
+  <div class="card">
+    <p class="muted" style="margin:0 0 8px">正式客戶看不到本區。再點標題 5 下可關閉。</p>
+    <b style="font-size:13px">切換方案（測試權限）</b>
+    <div class="chips" style="margin:6px 0 12px">
+      ${['start','team','pro'].map(p=>`<span class="chip ${currentPlan()===p?'active':''}" onclick="changePlan('${p}')">${PLAN_LIMITS[p].name}</span>`).join('')}
+    </div>
+    <b style="font-size:13px">3 天體驗：${TRIAL&&TRIAL.active?(trialDayLabel()+'（剩 '+trialDaysLeft()+' 天）'):'未啟用'}</b>
+    <button class="btn outline sm" style="width:100%;margin-top:6px" onclick="loadDemoTeam()">📥 載入示範校隊資料（10 人 × 3 天）</button>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn outline sm" onclick="restartTrial()">🔄 重新開始體驗</button>
+      <button class="btn gray sm" onclick="simulateExpire()">⏩ 模擬到期</button>
+    </div>
+    <button class="btn danger sm" style="width:100%;margin-top:8px" onclick="clearData()">🗑️ 清除所有資料</button>
+  </div>`:''}
 
   <div class="card">
     <button class="btn gray" onclick="logout()">🚪 登出</button>
