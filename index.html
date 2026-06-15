@@ -291,9 +291,36 @@ const LineAdapter = {
   push(text){ /* TODO: 串接 LINE Messaging API；目前由使用者複製貼上 */ return false; }
 };
 
+/* ==================================================================
+   【1.3】線上回報後端 API（Google Apps Script Web App）
+   - 教練啟用後分享連結，選手用自己手機回報，教練後台看誰沒回報
+   - GAS /exec 網址：優先用網址帶的 ?api=，其次 localStorage，其次內建常數
+   ================================================================== */
+const GAS_API_DEFAULT = ''; // 部署後可把 /exec 網址填這裡（或在設定頁貼上）
+function getApiUrl(){
+  const u=new URLSearchParams(location.search).get('api');
+  if(u) return decodeURIComponent(u);
+  return localStorage.getItem('teampro_api') || GAS_API_DEFAULT || '';
+}
+// GET 讀取（回傳 Promise<JSON>）
+function apiGet(params){
+  const base=getApiUrl();
+  if(!base) return Promise.reject('尚未設定後端網址');
+  const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+  return fetch(base+'?'+qs).then(r=>r.json());
+}
+// POST 寫入（用 text/plain 避免 GAS CORS 預檢）
+function apiPost(payload){
+  const base=getApiUrl();
+  if(!base) return Promise.reject('尚未設定後端網址');
+  return fetch(base,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(payload)}).then(r=>r.json());
+}
+
 let ACCOUNT = StorageAdapter.load(DB_KEYS.account, null);
 let REPORTS = StorageAdapter.load(DB_KEYS.reports, []);
 let NOTICES = StorageAdapter.load(DB_KEYS.notices, []);
+let ROSTER  = StorageAdapter.load('teampro_roster', []); // 選手名單（陣列：姓名）
 
 /* ==================================================================
    【1.5】trialMode 3 天教練戰情室體驗
@@ -1138,6 +1165,10 @@ function CoachWarRoomCard(){
   const todos=todayTodos();
   return `<div class="section-title">🎯 今日教練戰情室</div>
   <p class="muted" style="margin:-2px 14px 6px;line-height:1.6">不用一個一個問，<b style="color:var(--blue)">TeamPro 自動幫教練整理出今天最需要處理的人。</b></p>
+
+  ${ACCOUNT.online?`<div class="card" style="background:var(--card-soft);display:flex;justify-content:space-between;align-items:center">
+    <div><b>🌐 線上回報已啟用</b><div class="muted">選手可用手機回報</div></div>
+    <button class="btn green sm" style="width:auto" onclick="showOnlineStatus()">看誰沒回報</button></div>`:''}
 
   <!-- 今日出席狀況 + 快速點名 -->
   <div class="card">
@@ -2028,6 +2059,22 @@ function SettingsPage(){
     <p class="muted" style="margin-top:8px;font-size:12px">「模擬到期」會把體驗起始日往前調 3 天，方便測試到期鎖定畫面。</p>
   </div>
 
+  <div class="section-title">🌐 線上回報（選手填寫／家長查閱）</div>
+  <div class="card">
+    <p class="muted" style="margin:0 0 8px;line-height:1.6">啟用後分享連結，選手用自己手機回報，你從這裡看誰沒回報。需先部署 GAS 後端（見 backend/部署說明）。</p>
+    <label class="fld">後端 GAS 網址（/exec）</label>
+    <input id="api-url" placeholder="https://script.google.com/macros/s/XXX/exec" value="${localStorage.getItem('teampro_api')||''}">
+    <button class="btn sm" style="margin-top:8px;width:100%" onclick="saveApiUrl()">儲存後端網址</button>
+    <hr class="soft">
+    <div class="info-line"><span class="k">隊伍代碼</span><span class="v">${ACCOUNT.teamCode||'（啟用後產生）'}</span></div>
+    <div class="info-line"><span class="k">名單人數</span><span class="v">${ROSTER.length} 位</span></div>
+    <div class="info-line"><span class="k">線上回報</span><span class="v">${ACCOUNT.online?'✅ 已啟用':'尚未啟用'}</span></div>
+    <button class="btn outline sm" style="margin-top:10px;width:100%" onclick="rosterModal()">📇 選手名單管理</button>
+    <button class="btn green sm" style="margin-top:8px;width:100%" onclick="activateOnline()">🚀 啟用並產生分享連結</button>
+    ${ACCOUNT.online?`<button class="btn sm" style="margin-top:8px;width:100%" onclick="showShareLinks()">🔗 查看分享連結</button>
+    <button class="btn outline sm" style="margin-top:8px;width:100%" onclick="showOnlineStatus()">📊 查看誰沒回報</button>`:''}
+  </div>
+
   <div class="section-title">✏️ 修改團隊資料</div>
   <div class="card">
     <label class="fld">團隊名稱</label><input id="s-tname" value="${ACCOUNT.teamName}">
@@ -2124,9 +2171,229 @@ function BottomNav(active){
 }
 
 /* ==================================================================
-   啟動：依登入狀態決定首頁
+   【線上回報】教練：啟用、名單、分享連結、誰沒回報
+   ================================================================== */
+function genTeamCode(){ return 'T'+Math.random().toString(36).slice(2,8).toUpperCase(); }
+function ensureTeamCode(){ if(!ACCOUNT.teamCode){ ACCOUNT.teamCode=genTeamCode(); StorageAdapter.save(DB_KEYS.account,ACCOUNT);} return ACCOUNT.teamCode; }
+function shareBase(){
+  // 目前頁面網址（去掉 query）；若後端網址非內建，連結帶上 api 參數讓選手端也能連
+  const url=location.origin+location.pathname;
+  const api=getApiUrl();
+  const apiParam=(!GAS_API_DEFAULT && api)?('&api='+encodeURIComponent(api)):'';
+  return {url,apiParam};
+}
+function studentLink(){ const c=ensureTeamCode(); const {url,apiParam}=shareBase(); return `${url}?mode=student&team=${c}${apiParam}`; }
+function parentLink(){ const c=ensureTeamCode(); const {url,apiParam}=shareBase(); return `${url}?mode=parent&team=${c}${apiParam}`; }
+
+function saveApiUrl(){
+  const v=val('api-url');
+  if(v){ localStorage.setItem('teampro_api',v); toast('✅ 已儲存後端網址'); }
+  else { localStorage.removeItem('teampro_api'); toast('已清除'); }
+  render('settings');
+}
+// 啟用：上傳名單到雲端，產生分享連結
+function activateOnline(){
+  if(!getApiUrl()){ toast('請先貼上並儲存後端網址'); return; }
+  if(ROSTER.length===0){ toast('請先在「選手名單」加入選手'); return; }
+  const code=ensureTeamCode();
+  toast('上傳名單中…');
+  apiPost({action:'saveRoster',teamCode:code,teamName:ACCOUNT.teamName,students:ROSTER})
+    .then(res=>{
+      if(res&&res.ok){ ACCOUNT.online=true; StorageAdapter.save(DB_KEYS.account,ACCOUNT); showShareLinks(); }
+      else toast('啟用失敗：'+(res&&res.error||'未知錯誤'));
+    }).catch(e=>toast('連線失敗：'+e));
+}
+function showShareLinks(){
+  const sl=studentLink(), pl=parentLink();
+  showModal(`<h2>🔗 分享連結已產生</h2>
+    <p class="muted">名單已上傳雲端（隊伍代碼 <b>${ACCOUNT.teamCode}</b>）。把連結丟到 LINE 群即可。</p>
+    <b>🏃 選手回報連結</b>
+    <div class="copybox" id="sl">${sl}</div>
+    <button class="btn sm" onclick='copyText(document.getElementById("sl").textContent,"已複製選手回報連結")'>📋 複製選手連結</button>
+    <hr class="soft">
+    <b>👪 家長查閱連結</b>
+    <div class="copybox" id="pl">${pl}</div>
+    <button class="btn sm" onclick='copyText(document.getElementById("pl").textContent,"已複製家長查閱連結")'>📋 複製家長連結</button>
+    <hr class="soft">
+    <button class="btn" onclick="closeModal();showOnlineStatus()">📊 查看誰沒回報</button>
+    <button class="btn outline" style="margin-top:8px" onclick="closeModal()">關閉</button>`);
+}
+// 名單管理
+function rosterModal(){
+  showModal(`<h2>📇 選手名單</h2>
+    <div style="display:flex;gap:8px"><input id="ros-new" placeholder="輸入選手姓名">
+      <button class="btn sm" style="width:auto" onclick="addRoster()">新增</button></div>
+    <div id="ros-list" style="margin-top:10px">${rosterListHtml()}</div>
+    <button class="btn outline" style="margin-top:6px" onclick="seedRosterFromReports()">↧ 從現有紀錄帶入姓名</button>
+    <button class="btn" style="margin-top:8px" onclick="closeModal()">完成</button>`);
+}
+function rosterListHtml(){
+  if(ROSTER.length===0) return '<p class="muted">尚無選手，請新增或從紀錄帶入。</p>';
+  return ROSTER.map((n,i)=>`<div class="qa-row"><span class="qa-name">${i+1}. ${n}</span>
+    <button class="btn outline sm" style="width:auto" onclick="rmRoster(${i})">移除</button></div>`).join('');
+}
+function addRoster(){ const v=val('ros-new'); if(!v)return; if(!ROSTER.includes(v))ROSTER.push(v);
+  StorageAdapter.save('teampro_roster',ROSTER); document.getElementById('ros-list').innerHTML=rosterListHtml(); document.getElementById('ros-new').value=''; }
+function rmRoster(i){ ROSTER.splice(i,1); StorageAdapter.save('teampro_roster',ROSTER); document.getElementById('ros-list').innerHTML=rosterListHtml(); }
+function seedRosterFromReports(){ const names=[...new Set(REPORTS.filter(r=>r.kpiScores).map(r=>r.studentName))];
+  names.forEach(n=>{ if(!ROSTER.includes(n))ROSTER.push(n); }); StorageAdapter.save('teampro_roster',ROSTER);
+  document.getElementById('ros-list').innerHTML=rosterListHtml(); toast('已帶入 '+names.length+' 位'); }
+
+// 教練後台：誰回報、誰沒回報
+function showOnlineStatus(){
+  if(!getApiUrl()){ toast('請先設定後端網址'); return; }
+  const code=ACCOUNT.teamCode; if(!code){ toast('請先啟用線上回報'); return; }
+  const date=new Date().toISOString().slice(0,10);
+  showModal(`<h2>📊 今日線上回報狀況</h2><p class="muted">隊伍 ${code} · ${date}</p><p class="muted" id="os-load">讀取中…</p>`);
+  apiGet({action:'getStatus',team:code,date}).then(res=>{
+    if(!res||!res.ok){ document.getElementById('os-load').textContent='讀取失敗'; return; }
+    const done=res.reported||[], miss=res.notReported||[];
+    const repByName={}; (res.reports||[]).forEach(r=>repByName[r.name]=r);
+    document.querySelector('.modal').innerHTML=`<h2>📊 今日線上回報狀況</h2>
+      <p class="muted">隊伍 ${code} · ${date}</p>
+      <div class="stat-row">
+        <div class="stat"><div class="num" style="color:var(--green)">${done.length}</div><div class="lbl">已回報</div></div>
+        <div class="stat"><div class="num" style="color:var(--red)">${miss.length}</div><div class="lbl">未回報</div></div>
+        <div class="stat"><div class="num">${res.roster.length}</div><div class="lbl">名單</div></div>
+      </div>
+      <div class="section-title" style="color:var(--red);margin:14px 0 6px">❌ 尚未回報（${miss.length}）</div>
+      ${miss.length?miss.map(n=>`<div class="qa-row"><span class="qa-name">${n}</span><span class="tag gray">未回報</span></div>`).join(''):'<p class="muted">全員都回報了 ✅</p>'}
+      <div class="section-title" style="color:var(--green);margin:14px 0 6px">✅ 已回報（${done.length}）</div>
+      ${done.length?done.map(n=>{const r=repByName[n]||{};const lt=r.light||'none';
+        return `<div class="qa-row"><span class="qa-name">${n}</span><span class="tag ${lt==='green'?'green':lt==='yellow'?'yellow':lt==='red'?'red':'gray'}">${lt==='none'?'已回報':trafficText(lt)}</span></div>`;}).join(''):'<p class="muted">尚無回報</p>'}
+      <button class="btn" style="margin-top:14px" onclick="showOnlineStatus()">🔄 重新整理</button>
+      <button class="btn outline" style="margin-top:8px" onclick="closeModal()">關閉</button>`;
+  }).catch(e=>{ const el=document.getElementById('os-load'); if(el)el.textContent='連線失敗：'+e; });
+}
+
+/* ==================================================================
+   【選手端】?mode=student&team=代碼  → 選名字 → 填回報 → 上傳
+   ================================================================== */
+const STU={team:null,roster:[],teamName:'',name:null};
+function stuShell(inner){
+  document.getElementById('app').innerHTML=`
+  <div class="hero" style="padding:26px 18px 10px">
+    <div class="hero-badge">🏃 選手每日回報</div>
+    <h1 style="font-size:22px;margin:8px 0 2px">${STU.teamName||'TeamPro'}</h1>
+    <div class="subtitle">填一下今天的狀態，教練就看得到 👍</div>
+  </div>${inner}`;
+}
+function StudentApp(team){
+  if(!team){ document.getElementById('app').innerHTML='<div class="card center" style="margin-top:40px">連結無效（缺少隊伍代碼）</div>'; return; }
+  STU.team=team;
+  stuShell('<div class="card center"><p class="muted">載入名單中…</p></div>');
+  apiGet({action:'getRoster',team}).then(res=>{
+    if(!res||!res.ok||!res.students.length){ stuShell('<div class="card center"><p class="muted">找不到名單，請教練先在 TeamPro 啟用線上回報。</p></div>'); return; }
+    STU.roster=res.students; STU.teamName=res.teamName||'';
+    stuPickName();
+  }).catch(e=>stuShell('<div class="card center"><p class="muted">連線失敗：'+e+'</p></div>'));
+}
+function stuPickName(){
+  stuShell(`<div class="card"><b>請選擇你的名字</b>
+    <div class="chips" style="margin-top:10px">${STU.roster.map((n,i)=>`<span class="chip" onclick="stuForm(${i})">${n}</span>`).join('')}</div>
+  </div>`);
+}
+function stuForm(i){
+  STU.name=STU.roster[i];
+  const today=new Date().toISOString().slice(0,10);
+  stuShell(`<div class="card">
+    <div class="info-line"><span class="k">姓名</span><span class="v">${STU.name}</span></div>
+    <div class="info-line"><span class="k">日期</span><span class="v">${today}</span></div>
+    <label class="fld">出席狀態</label>
+    <select id="st-att">${['正常出席','請假','遲到','早退'].map(x=>`<option>${x}</option>`).join('')}</select>
+    <label class="fld">身體狀態</label>
+    <select id="st-body">${['很好','普通','疲勞','不舒服','受傷中'].map(x=>`<option>${x}</option>`).join('')}</select>
+    <label class="fld">睡眠時數</label><input id="st-sleep" type="number" step="0.5" value="7">
+    <label class="fld">疲勞程度（1～5）</label>
+    <select id="st-fat">${[1,2,3,4,5].map(x=>`<option ${x===2?'selected':''}>${x}</option>`).join('')}</select>
+    <label class="fld">是否受傷</label><select id="st-inj"><option>否</option><option>是</option></select>
+    <label class="fld">今日水量（ml）</label><input id="st-water" type="number" value="2000">
+    <label class="fld">今日整體自評（1～5）</label>
+    <select id="st-self">${[1,2,3,4,5].map(x=>`<option ${x===3?'selected':''}>${x}</option>`).join('')}</select>
+    <label class="fld">想跟教練說（可空白）</label><textarea id="st-note" placeholder="今天的感受..."></textarea>
+    <button class="btn green" style="margin-top:14px" onclick="stuSubmit()">✅ 送出今日回報</button>
+    <button class="btn outline" style="margin-top:8px" onclick="stuPickName()">← 換一位</button>
+  </div>`);
+}
+function stuSubmit(){
+  const self=parseInt(val('st-self'))||3;
+  const sleep=parseFloat(val('st-sleep'))||0;
+  const fat=parseInt(val('st-fat'))||1;
+  const body=val('st-body'); const inj=val('st-inj'); const water=val('st-water');
+  let light=self>=4?'green':self>=3?'yellow':'red';
+  if((fat===5||body==='受傷中'||inj==='是'||sleep<6)&&light==='green') light='yellow';
+  const payload={action:'submitReport',teamCode:STU.team,date:new Date().toISOString().slice(0,10),
+    studentName:STU.name,attendance:val('st-att'),body,sleep,fatigue:fat,injury:inj,injuryPart:'',
+    water,kpiAvg:self,light,note:val('st-note')};
+  stuShell('<div class="card center"><p class="muted">送出中…</p></div>');
+  apiPost(payload).then(res=>{
+    if(res&&res.ok){
+      stuShell(`<div class="card center"><div style="font-size:46px">${lightEmoji(light)}</div>
+        <h2>回報完成！</h2><p class="muted">謝謝 ${STU.name}，教練已經收到你今天的狀態 👍</p>
+        <button class="btn" onclick="stuPickName()">幫其他人回報</button></div>`);
+    } else stuShell('<div class="card center"><p class="muted">送出失敗，請稍後再試。</p><button class="btn" onclick="stuForm(STU.roster.indexOf(STU.name))">重試</button></div>');
+  }).catch(e=>stuShell('<div class="card center"><p class="muted">連線失敗：'+e+'</p></div>'));
+}
+
+/* ==================================================================
+   【家長端】?mode=parent&team=代碼  → 選孩子 → 看最近狀態（唯讀）
+   ================================================================== */
+const PAR={team:null,roster:[],teamName:''};
+function ParentApp(team){
+  if(!team){ document.getElementById('app').innerHTML='<div class="card center" style="margin-top:40px">連結無效</div>'; return; }
+  PAR.team=team;
+  document.getElementById('app').innerHTML='<div class="card center" style="margin-top:40px"><p class="muted">載入中…</p></div>';
+  apiGet({action:'getRoster',team}).then(res=>{
+    if(!res||!res.ok||!res.students.length){ document.getElementById('app').innerHTML='<div class="card center" style="margin-top:40px"><p class="muted">查無資料</p></div>'; return; }
+    PAR.roster=res.students; PAR.teamName=res.teamName||'';
+    parPick();
+  }).catch(e=>{document.getElementById('app').innerHTML='<div class="card center" style="margin-top:40px"><p class="muted">連線失敗：'+e+'</p></div>';});
+}
+function parShell(inner){
+  document.getElementById('app').innerHTML=`
+  <div class="hero" style="padding:26px 18px 10px">
+    <div class="hero-badge">👪 家長安心中心</div>
+    <h1 style="font-size:22px;margin:8px 0 2px">${PAR.teamName||'TeamPro'}</h1>
+    <div class="subtitle">看看孩子最近的訓練狀態</div>
+  </div>${inner}`;
+}
+function parPick(){
+  parShell(`<div class="card"><b>請選擇您的孩子</b>
+    <div class="chips" style="margin-top:10px">${PAR.roster.map(n=>`<span class="chip" onclick="parView('${n}')">${n}</span>`).join('')}</div>
+  </div>`);
+}
+function parView(name){
+  parShell('<div class="card center"><p class="muted">載入中…</p></div>');
+  apiGet({action:'getStudent',team:PAR.team,name}).then(res=>{
+    const list=(res&&res.reports)||[];
+    const latest=list[0];
+    parShell(`<div class="card">
+      <h2 style="margin:0 0 4px">${name}</h2>
+      ${latest?`<div class="info-line"><span class="k">最新狀態</span><span class="v">${lightEmoji(latest.light)} ${latest.light==='none'?'已回報':trafficText(latest.light)}</span></div>
+        <div class="info-line"><span class="k">日期</span><span class="v">${latest.date}</span></div>
+        <div class="info-line"><span class="k">出席</span><span class="v">${latest.attendance||'-'}</span></div>
+        <div class="info-line"><span class="k">身體/睡眠</span><span class="v">${latest.body||'-'} / ${latest.sleep||'-'}h</span></div>
+        <div class="info-line"><span class="k">教練/孩子留言</span><span class="v">${latest.note||'-'}</span></div>`
+        :'<p class="muted">孩子最近還沒有回報紀錄。</p>'}
+    </div>
+    <div class="section-title" style="font-size:14px">📅 最近紀錄</div>
+    <div class="card">
+      ${list.length?list.map(r=>`<div class="report-item"><div><b>${r.date}</b> ${lightDot(r.light)}<div class="muted">${r.attendance||''} · 睡眠 ${r.sleep||'-'}h</div></div>
+        <span class="tag ${r.light==='green'?'green':r.light==='yellow'?'yellow':r.light==='red'?'red':'gray'}">${r.light==='none'?'已回報':trafficText(r.light)}</span></div>`).join(''):'<p class="muted">尚無紀錄</p>'}
+    </div>
+    <button class="btn outline" style="margin:0 14px" onclick="parPick()">← 看其他孩子</button>
+    <div style="height:30px"></div>`);
+  }).catch(e=>parShell('<div class="card center"><p class="muted">連線失敗：'+e+'</p></div>'));
+}
+
+/* ==================================================================
+   啟動：先判斷網址模式（選手回報 / 家長查閱），否則進教練系統
    ================================================================== */
 (function init(){
+  const q=new URLSearchParams(location.search);
+  const mode=q.get('mode');
+  if(mode==='student'){ StudentApp(q.get('team')); return; }
+  if(mode==='parent'){ ParentApp(q.get('team')); return; }
   const logged=StorageAdapter.load(DB_KEYS.session,false);
   if(logged && ACCOUNT){ render('dashboard'); }
   else { render('landing'); }
