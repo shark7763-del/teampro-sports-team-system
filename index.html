@@ -895,6 +895,7 @@ function Dashboard(){
     <span class="pill-plan">${L.name}</span>
   </div>
 
+  ${OnlineActivateCard()}
   ${TrialExpiredBanner()}
   ${CoachWarRoomCard()}
   ${TodayCoachFlow()}
@@ -2183,6 +2184,20 @@ function BottomNav(active){
 /* ==================================================================
    【線上回報】教練：啟用、名單、分享連結、誰沒回報
    ================================================================== */
+// Dashboard 頂部引導卡：尚未啟用線上回報時顯示
+function OnlineActivateCard(){
+  if(ACCOUNT.online) return '';
+  return `<div class="card" style="background:linear-gradient(135deg,var(--navy2),var(--blue));color:#fff;border:none">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="font-size:30px">🌐</div>
+      <div style="flex:1">
+        <h3 style="margin:0 0 4px;color:#fff;font-size:17px">讓選手自己用手機回報</h3>
+        <p style="margin:0;font-size:13px;opacity:.92;line-height:1.6">啟用後分享一條連結到 LINE 群，選手自己填今日狀態，你就能即時看到<b>誰回報了、誰還沒回報</b>，不用一個一個問。</p>
+      </div>
+    </div>
+    <button class="btn" style="margin-top:12px;background:#fff;color:var(--blue)" onclick="go('settings')">🚀 啟用線上回報</button>
+  </div>`;
+}
 function genTeamCode(){ return 'T'+Math.random().toString(36).slice(2,8).toUpperCase(); }
 function ensureTeamCode(){ if(!ACCOUNT.teamCode){ ACCOUNT.teamCode=genTeamCode(); StorageAdapter.save(DB_KEYS.account,ACCOUNT);} return ACCOUNT.teamCode; }
 function shareBase(){
