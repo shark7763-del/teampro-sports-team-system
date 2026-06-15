@@ -323,6 +323,28 @@ let NOTICES = StorageAdapter.load(DB_KEYS.notices, []);
 let ROSTER  = StorageAdapter.load('teampro_roster', []); // 選手名單（陣列：姓名）
 
 /* ==================================================================
+   【1.6】體育班專用資料：三時段出席 / 體重量級 / 訓練菜單 / 輔導紀錄
+   ================================================================== */
+let ATT3    = StorageAdapter.load('teampro_att3', []);     // [{date,studentName,morning,specialty,evening}]
+let WEIGHTS = StorageAdapter.load('teampro_weights', []);  // [{date,studentName,weight}]
+let WTARGET = StorageAdapter.load('teampro_wtarget', {});  // {name:{target,weightClass,compDate}}
+let MENUS   = StorageAdapter.load('teampro_menus', []);    // [{date,session,content,focus,note}]
+let COUNSEL = StorageAdapter.load('teampro_counsel', []);  // [{date,studentName,type,content,action,coach}]
+const SESSIONS=[['morning','晨操'],['specialty','專長'],['evening','晚自習']];
+const ATT_STATUS=['正常出席','請假','遲到','早退','缺席'];
+function teamRoster(){
+  if(ROSTER.length) return ROSTER;
+  const n=[...new Set(REPORTS.filter(r=>r.kpiScores).map(r=>r.studentName))];
+  return n.length?n:['王小明','李小華','陳小宇','張小安','林小偉','黃小婷','劉小杰','蔡小妤'];
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function attStatusTag(s){
+  if(!s) return '<span class="tag gray">—</span>';
+  const cls=s==='正常出席'?'green':s==='缺席'?'red':'yellow';
+  return `<span class="tag ${cls}">${s}</span>`;
+}
+
+/* ==================================================================
    【1.5】trialMode 3 天教練戰情室體驗
    trialData: { active, startDate, endDate, progress:{day1,day2,day3} }
    trialDay(): day1 / day2 / day3 / expired（依實際經過天數計算）
@@ -488,7 +510,7 @@ function render(page,arg){
   CURRENT=page||CURRENT;
   const app=document.getElementById('app');
   // 登入後頁面
-  const loggedPages=['dashboard','checkin','records','coach','reports','settings'];
+  const loggedPages=['dashboard','checkin','records','coach','reports','settings','att3','weight','menu','counsel','result'];
   if(loggedPages.includes(CURRENT) && !StorageAdapter.load(DB_KEYS.session,false)){
     CURRENT='landing';
   }
@@ -502,6 +524,11 @@ function render(page,arg){
     case 'coach': app.innerHTML=CoachPage()+BottomNav('coach'); break;
     case 'reports': app.innerHTML=ReportsPage()+BottomNav('reports'); break;
     case 'settings': app.innerHTML=SettingsPage()+BottomNav('settings'); break;
+    case 'att3': app.innerHTML=Attendance3Page()+BottomNav('dashboard'); break;
+    case 'weight': app.innerHTML=WeightPage()+BottomNav('dashboard'); break;
+    case 'menu': app.innerHTML=MenuPage()+BottomNav('dashboard'); break;
+    case 'counsel': app.innerHTML=CounselPage()+BottomNav('dashboard'); break;
+    case 'result': app.innerHTML=ResultPage()+BottomNav('reports'); break;
     default: app.innerHTML=Landing();
   }
 }
@@ -898,6 +925,7 @@ function Dashboard(){
   ${OnlineActivateCard()}
   ${TrialExpiredBanner()}
   ${CoachWarRoomCard()}
+  ${PEToolsSection()}
   ${TodayCoachFlow()}
   ${TrialProgressCard()}
   ${FirstUseTasksCard()}
@@ -2116,7 +2144,8 @@ function saveTeam(){
   StorageAdapter.save(DB_KEYS.account,ACCOUNT);toast('✅ 已儲存');
 }
 function exportJSON(){
-  const data={account:ACCOUNT,reports:REPORTS,trial:TRIAL,notices:NOTICES};
+  const data={account:ACCOUNT,reports:REPORTS,trial:TRIAL,notices:NOTICES,
+    roster:ROSTER,att3:ATT3,weights:WEIGHTS,wtarget:WTARGET,menus:MENUS,counsel:COUNSEL};
   downloadFile(JSON.stringify(data,null,2),'teampro_backup.json','application/json');
   toast('📤 已匯出 JSON');
 }
@@ -2130,6 +2159,12 @@ function importJSON(e){
       if(d.reports){REPORTS=d.reports;StorageAdapter.save(DB_KEYS.reports,REPORTS);}
       if(d.trial){TRIAL=d.trial;StorageAdapter.save(DB_KEYS.trial,TRIAL);}
       if(d.notices){NOTICES=d.notices;StorageAdapter.save(DB_KEYS.notices,NOTICES);}
+      if(d.roster){ROSTER=d.roster;StorageAdapter.save('teampro_roster',ROSTER);}
+      if(d.att3){ATT3=d.att3;StorageAdapter.save('teampro_att3',ATT3);}
+      if(d.weights){WEIGHTS=d.weights;StorageAdapter.save('teampro_weights',WEIGHTS);}
+      if(d.wtarget){WTARGET=d.wtarget;StorageAdapter.save('teampro_wtarget',WTARGET);}
+      if(d.menus){MENUS=d.menus;StorageAdapter.save('teampro_menus',MENUS);}
+      if(d.counsel){COUNSEL=d.counsel;StorageAdapter.save('teampro_counsel',COUNSEL);}
       toast('📥 匯入成功');render('settings');
     }catch(err){toast('❌ 檔案格式錯誤');}
   };
@@ -2164,6 +2199,278 @@ function downloadFile(content,name,type){
   const blob=new Blob([content],{type});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+/* ==================================================================
+   【體育班工具】Dashboard 區塊入口
+   ================================================================== */
+function PEToolsSection(){
+  return `<div class="section-title">🥋 體育班工具</div>
+  <div class="card" style="padding:12px"><div class="grid2">
+    <div class="feat" onclick="go('att3')"><span class="fi">📋</span><span class="fn">三時段點名</span><span class="fd">晨操／專長／晚自習</span></div>
+    <div class="feat" onclick="go('weight')"><span class="fi">⚖️</span><span class="fn">體重／量級</span><span class="fd">賽前減重紅燈預警</span></div>
+    <div class="feat" onclick="go('menu')"><span class="fi">📝</span><span class="fn">今日訓練菜單</span><span class="fd">記錄訓練內容</span></div>
+    <div class="feat" onclick="go('counsel')"><span class="fi">💬</span><span class="fn">輔導紀錄</span><span class="fd">關懷／晤談／課業</span></div>
+    <div class="feat" onclick="go('result')"><span class="fi">📑</span><span class="fn">成果報告</span><span class="fd">一鍵匯出列印</span></div>
+  </div></div>`;
+}
+
+/* ==================================================================
+   ① 三時段出席（晨操／專長／晚自習）
+   ================================================================== */
+let A3_SES='morning';
+function getAtt3(date,name){ return ATT3.find(a=>a.date===date&&a.studentName===name); }
+function setAtt3(name,status){
+  const date=todayStr(); let rec=getAtt3(date,name);
+  if(!rec){ rec={date,studentName:name,morning:'',specialty:'',evening:''}; ATT3.push(rec); }
+  rec[A3_SES]=status; StorageAdapter.save('teampro_att3',ATT3);
+  document.getElementById('a3-list').innerHTML=a3ListHtml();
+  document.getElementById('a3-sum').innerHTML=a3SummaryHtml();
+}
+function a3SummaryHtml(){
+  const date=todayStr(); const roster=teamRoster();
+  const cnt=s=>roster.filter(n=>{const r=getAtt3(date,n);return r&&r[A3_SES]===s;}).length;
+  const present=cnt('正常出席'),absent=cnt('缺席'),notMarked=roster.filter(n=>{const r=getAtt3(date,n);return !r||!r[A3_SES];}).length;
+  return `<div class="stat-row">
+    <div class="stat"><div class="num" style="color:var(--green)">${present}</div><div class="lbl">出席</div></div>
+    <div class="stat"><div class="num" style="color:var(--red)">${absent}</div><div class="lbl">缺席</div></div>
+    <div class="stat"><div class="num" style="color:var(--muted)">${notMarked}</div><div class="lbl">未點</div></div>
+  </div>`;
+}
+function a3ListHtml(){
+  const date=todayStr(); const roster=teamRoster();
+  const btn=(name,label,val,cls,cur)=>`<button class="btn ${cur===val?cls:'outline'} sm" style="padding:6px 8px;min-width:0" onclick="setAtt3('${name}','${val}')">${label}</button>`;
+  return roster.map(n=>{ const r=getAtt3(date,n); const cur=r?r[A3_SES]:'';
+    return `<div class="qa-row" style="flex-wrap:wrap"><span class="qa-name">${n}${cur?' '+attStatusTag(cur):''}</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${btn(n,'出席','正常出席','green',cur)}${btn(n,'遲到','遲到','',cur)}${btn(n,'請假','請假','gray',cur)}${btn(n,'缺席','缺席','danger',cur)}
+      </div></div>`;
+  }).join('');
+}
+function Attendance3Page(){
+  return `<div class="topbar"><div><h1>📋 三時段點名</h1><div class="sub">${todayStr()}</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <div class="card">
+    <div class="chips">${SESSIONS.map(s=>`<span class="chip ${A3_SES===s[0]?'active':''}" onclick="A3_SES='${s[0]}';render('att3')">${s[1]}</span>`).join('')}</div>
+    <div id="a3-sum" style="margin-top:10px">${a3SummaryHtml()}</div>
+  </div>
+  <div class="card"><b>點名（${SESSIONS.find(s=>s[0]===A3_SES)[1]}）</b>
+    <div id="a3-list" style="margin-top:8px">${a3ListHtml()}</div>
+  </div>
+  <div style="height:30px"></div>`;
+}
+
+/* ==================================================================
+   ② 體重／量級減重監控（賽前紅燈預警）
+   ================================================================== */
+function latestWeight(name){ const l=WEIGHTS.filter(w=>w.studentName===name).sort((a,b)=>a.date<b.date?1:-1); return l[0]; }
+function weightLight(name){
+  const t=WTARGET[name]; const w=latestWeight(name);
+  if(!t||!t.target||!w) return {light:'none',diff:null,days:null};
+  const diff=+(w.weight-t.target).toFixed(1);
+  let days=null; if(t.compDate){ days=Math.ceil((new Date(t.compDate)-new Date())/864e5); }
+  let light;
+  if(diff<=0) light='green';
+  else if(diff<=1.5) light='yellow';
+  else light='red';
+  // 越接近比賽、差越多 → 升級警示
+  if(days!==null && days<=7 && diff>0.5 && light!=='red') light='red';
+  return {light,diff,days,weight:w.weight};
+}
+function WeightPage(){
+  const roster=teamRoster();
+  const rows=roster.map(n=>{ const t=WTARGET[n]||{}; const w=latestWeight(n); const r=weightLight(n);
+    const lbl=r.light==='green'?'已達量級':r.light==='yellow'?'可控範圍':r.light==='red'?'需注意':'未設定';
+    return `<div class="care-row ${r.light==='yellow'?'yl':''}" style="border-left-color:${r.light==='green'?'var(--green)':r.light==='red'?'var(--red)':r.light==='yellow'?'var(--yellow)':'var(--line)'}">
+      <div class="cr-top"><span class="cr-name">${n} ${r.light!=='none'?lightDot(r.light):''}</span>
+        <span class="tag ${r.light==='green'?'green':r.light==='red'?'red':r.light==='yellow'?'yellow':'gray'}">${lbl}</span></div>
+      <div class="cr-reason">
+        目前 ${w?w.weight+'kg':'—'} ／ 量級 ${t.target?t.target+'kg':'未設定'}${t.weightClass?'（'+t.weightClass+'）':''}
+        ${r.diff!==null?` ／ 差 ${r.diff>0?'+':''}${r.diff}kg`:''}${r.days!==null?` ／ 距比賽 ${r.days} 天`:''}
+      </div>
+      <div class="btn-row">
+        <button class="btn green sm" onclick="recordWeightModal('${n}')">⚖️ 記錄體重</button>
+        <button class="btn outline sm" onclick="setTargetModal('${n}')">🎯 設定量級</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="topbar"><div><h1>⚖️ 體重／量級</h1><div class="sub">賽前減重監控</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <p class="muted" style="margin:8px 14px;line-height:1.6">🟢 已達量級　🟡 1.5kg 內可控　🔴 超標或臨賽過重需注意</p>
+  <div class="card">${rows}</div>
+  <div style="height:30px"></div>`;
+}
+function recordWeightModal(name){
+  showModal(`<h2>⚖️ 記錄體重</h2><p class="muted">${name} · ${todayStr()}</p>
+    <label class="fld">今日體重（kg）</label><input id="wt-val" type="number" step="0.1" value="${latestWeight(name)?latestWeight(name).weight:''}">
+    <button class="btn green" style="margin-top:12px" onclick="saveWeight('${name}')">儲存</button>
+    <button class="btn outline" style="margin-top:8px" onclick="closeModal()">取消</button>`);
+}
+function saveWeight(name){
+  const v=parseFloat(val('wt-val')); if(!v){toast('請輸入體重');return;}
+  const date=todayStr(); let rec=WEIGHTS.find(w=>w.studentName===name&&w.date===date);
+  if(rec) rec.weight=v; else WEIGHTS.push({date,studentName:name,weight:v});
+  StorageAdapter.save('teampro_weights',WEIGHTS); closeModal(); toast('✅ 已記錄'); render('weight');
+}
+function setTargetModal(name){
+  const t=WTARGET[name]||{};
+  showModal(`<h2>🎯 設定量級目標</h2><p class="muted">${name}</p>
+    <label class="fld">量級名稱（選填）</label><input id="tg-cls" placeholder="例：-55kg 級" value="${t.weightClass||''}">
+    <label class="fld">目標體重（kg）</label><input id="tg-tar" type="number" step="0.1" value="${t.target||''}">
+    <label class="fld">比賽日期（選填）</label><input id="tg-date" type="date" value="${t.compDate||''}">
+    <button class="btn green" style="margin-top:12px" onclick="saveTarget('${name}')">儲存</button>
+    <button class="btn outline" style="margin-top:8px" onclick="closeModal()">取消</button>`);
+}
+function saveTarget(name){
+  WTARGET[name]={weightClass:val('tg-cls'),target:parseFloat(val('tg-tar'))||0,compDate:val('tg-date')};
+  StorageAdapter.save('teampro_wtarget',WTARGET); closeModal(); toast('✅ 已設定'); render('weight');
+}
+
+/* ==================================================================
+   ③ 今日訓練菜單
+   ================================================================== */
+function MenuPage(){
+  const recent=[...MENUS].sort((a,b)=>a.date<b.date?1:-1).slice(0,15);
+  return `<div class="topbar"><div><h1>📝 今日訓練菜單</h1><div class="sub">記錄訓練內容</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <div class="card">
+    <label class="fld">日期</label><input id="mn-date" type="date" value="${todayStr()}">
+    <label class="fld">時段</label>
+    <select id="mn-ses"><option>晨操</option><option selected>專長訓練</option><option>晚自習</option><option>其他</option></select>
+    <label class="fld">訓練內容（項目／組數／距離／時間／重量）</label>
+    <textarea id="mn-content" placeholder="例：熱身20分 → 踢靶 5組×30秒 → 對練 3回合 → 核心收操"></textarea>
+    <label class="fld">訓練重點</label><input id="mn-focus" placeholder="例：後踢時機、距離控制">
+    <label class="fld">備註（選填）</label><input id="mn-note" placeholder="例：陳小宇腳踝不適，減量">
+    <button class="btn green" style="margin-top:12px" onclick="saveMenu()">✅ 儲存今日菜單</button>
+  </div>
+  <div class="section-title">📚 最近菜單</div>
+  <div class="card">
+    ${recent.length?recent.map(m=>`<div class="report-item">
+      <div><b>${m.date}</b> <span class="tag blue">${m.session}</span><div class="muted" style="white-space:pre-wrap">${m.content}</div>
+      ${m.focus?`<div class="muted">🎯 ${m.focus}</div>`:''}${m.note?`<div class="muted">📌 ${m.note}</div>`:''}</div>
+      <button class="btn outline sm" style="width:auto" onclick="delMenu('${m.id}')">刪</button>
+    </div>`).join(''):'<p class="muted">尚無菜單紀錄</p>'}
+  </div>
+  <div style="height:30px"></div>`;
+}
+function saveMenu(){
+  const content=val('mn-content'); if(!content){toast('請填寫訓練內容');return;}
+  MENUS.push({id:'M'+Date.now(),date:val('mn-date'),session:val('mn-ses'),content,focus:val('mn-focus'),note:val('mn-note'),createdAt:new Date().toISOString()});
+  StorageAdapter.save('teampro_menus',MENUS); toast('✅ 已儲存菜單'); render('menu');
+}
+function delMenu(id){ MENUS=MENUS.filter(m=>m.id!==id); StorageAdapter.save('teampro_menus',MENUS); render('menu'); }
+
+/* ==================================================================
+   ④ 輔導紀錄
+   ================================================================== */
+function CounselPage(){
+  const roster=teamRoster();
+  const recent=[...COUNSEL].sort((a,b)=>a.date<b.date?1:-1).slice(0,20);
+  return `<div class="topbar"><div><h1>💬 輔導紀錄</h1><div class="sub">關懷／晤談／課業</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <div class="card">
+    <label class="fld">日期</label><input id="cs-date" type="date" value="${todayStr()}">
+    <label class="fld">學生</label>
+    <select id="cs-name">${roster.map(n=>`<option>${n}</option>`).join('')}</select>
+    <label class="fld">類別</label>
+    <select id="cs-type"><option>生活關懷</option><option>課業輔導</option><option>心理晤談</option><option>行為提醒</option><option>家庭聯繫</option><option>其他</option></select>
+    <label class="fld">輔導內容</label><textarea id="cs-content" placeholder="記錄談話內容、發現的狀況..."></textarea>
+    <label class="fld">後續處理／追蹤</label><input id="cs-action" placeholder="例：已通知家長，下週追蹤">
+    <label class="fld">輔導人</label><input id="cs-coach" value="${ACCOUNT&&ACCOUNT.headCoach?ACCOUNT.headCoach:(ACCOUNT?ACCOUNT.name||'':'')}">
+    <button class="btn green" style="margin-top:12px" onclick="saveCounsel()">✅ 儲存輔導紀錄</button>
+  </div>
+  <div class="section-title">📚 輔導紀錄（最近 20 筆）</div>
+  <div class="card">
+    ${recent.length?recent.map(c=>`<div class="report-item">
+      <div><b>${c.studentName}</b> <span class="tag blue">${c.type}</span> <span class="muted">${c.date}</span>
+        <div class="muted" style="white-space:pre-wrap">${c.content}</div>
+        ${c.action?`<div class="muted">↪ ${c.action}</div>`:''}${c.coach?`<div class="muted">輔導人：${c.coach}</div>`:''}</div>
+      <button class="btn outline sm" style="width:auto" onclick="delCounsel('${c.id}')">刪</button>
+    </div>`).join(''):'<p class="muted">尚無輔導紀錄</p>'}
+  </div>
+  <div style="height:30px"></div>`;
+}
+function saveCounsel(){
+  const content=val('cs-content'); if(!content){toast('請填寫輔導內容');return;}
+  COUNSEL.push({id:'C'+Date.now(),date:val('cs-date'),studentName:val('cs-name'),type:val('cs-type'),
+    content,action:val('cs-action'),coach:val('cs-coach'),createdAt:new Date().toISOString()});
+  StorageAdapter.save('teampro_counsel',COUNSEL); toast('✅ 已儲存'); render('counsel');
+}
+function delCounsel(id){ COUNSEL=COUNSEL.filter(c=>c.id!==id); StorageAdapter.save('teampro_counsel',COUNSEL); render('counsel'); }
+
+/* ==================================================================
+   ⑤ 成果報告一鍵匯出（成交鈕）
+   ================================================================== */
+function ResultPage(){
+  const roster=teamRoster();
+  const today=todayStr();
+  // 出席率（三時段，近 30 天）
+  const since=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  let attTotal=0, attPresent=0;
+  ATT3.filter(a=>a.date>=since).forEach(a=>SESSIONS.forEach(s=>{ if(a[s[0]]){ attTotal++; if(a[s[0]]==='正常出席')attPresent++; }}));
+  const attRate=attTotal?Math.round(attPresent/attTotal*100):0;
+  // 訓練量
+  const menuCount=MENUS.length;
+  const menu30=MENUS.filter(m=>m.date>=since).length;
+  // 回報/KPI
+  const reps=fullReports();
+  const kpiAvg=reps.length?(reps.reduce((s,r)=>s+(r.kpiAverage||0),0)/reps.length).toFixed(2):'-';
+  // 輔導
+  const counselCount=COUNSEL.length;
+  // 體重達標
+  const wOk=roster.filter(n=>weightLight(n).light==='green').length;
+  const wSet=roster.filter(n=>WTARGET[n]&&WTARGET[n].target).length;
+  return `<div class="topbar"><div><h1>📑 成果報告</h1><div class="sub">${ACCOUNT.unitName} ${ACCOUNT.teamName}</div></div>
+    <button class="btn ghost sm" onclick="go('dashboard')">返回</button></div>
+  <div class="card center">
+    <button class="btn green" onclick="printResult()">🖨️ 一鍵匯出 / 列印 PDF</button>
+    <p class="muted" style="margin-top:8px;font-size:12px">可用於招生簡章、訪視評鑑、續辦依據</p>
+  </div>
+  <div id="result-doc">
+    <div class="card">
+      <h2 style="margin:0 0 2px">${ACCOUNT.unitName}　跆拳道體育班　訓練成果報告</h2>
+      <p class="muted">團隊：${ACCOUNT.teamName} ｜ 產出日期：${today} ｜ 統計區間：近 30 天</p>
+      <div class="stat-row" style="margin-top:10px">
+        <div class="stat"><div class="num">${roster.length}</div><div class="lbl">選手人數</div></div>
+        <div class="stat"><div class="num" style="color:var(--green)">${attRate}%</div><div class="lbl">出席率</div></div>
+        <div class="stat"><div class="num">${menu30}</div><div class="lbl">訓練課次</div></div>
+      </div>
+      <div class="info-line"><span class="k">平均 KPI 表現</span><span class="v">${kpiAvg} / 5</span></div>
+      <div class="info-line"><span class="k">累積訓練菜單</span><span class="v">${menuCount} 筆</span></div>
+      <div class="info-line"><span class="k">輔導紀錄</span><span class="v">${counselCount} 筆</span></div>
+      <div class="info-line"><span class="k">量級達標</span><span class="v">${wOk} / ${wSet||roster.length} 位</span></div>
+    </div>
+    <div class="card">
+      <b>👥 選手名單與狀態</b>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
+        <tr style="background:var(--card-soft)"><th style="text-align:left;padding:6px">姓名</th><th style="padding:6px">量級</th><th style="padding:6px">目前體重</th><th style="padding:6px">狀態</th></tr>
+        ${roster.map(n=>{const t=WTARGET[n]||{};const w=latestWeight(n);const r=weightLight(n);
+          return `<tr style="border-top:1px solid var(--line)"><td style="padding:6px">${n}</td>
+          <td style="padding:6px;text-align:center">${t.target?t.target+'kg':'-'}</td>
+          <td style="padding:6px;text-align:center">${w?w.weight+'kg':'-'}</td>
+          <td style="padding:6px;text-align:center">${r.light==='none'?'-':lightEmoji(r.light)}</td></tr>`;}).join('')}
+      </table>
+    </div>
+    <div class="card">
+      <b>📝 近期訓練重點</b>
+      ${MENUS.slice(-6).reverse().map(m=>`<div class="muted" style="margin-top:6px">${m.date}（${m.session}）：${m.content}${m.focus?' ／ 重點：'+m.focus:''}</div>`).join('')||'<p class="muted">尚無紀錄</p>'}
+    </div>
+  </div>
+  <div style="height:30px"></div>`;
+}
+function printResult(){
+  const doc=document.getElementById('result-doc').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>訓練成果報告</title>
+  <style>body{font-family:"Microsoft JhengHei",sans-serif;padding:24px;color:#0f172a;}
+  .card{border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:14px;}
+  h2{font-size:20px;margin:0 0 6px;} .muted{color:#64748b;font-size:13px;}
+  .stat-row{display:flex;gap:10px;margin:10px 0;} .stat{flex:1;text-align:center;background:#f1f5fb;border-radius:10px;padding:10px;}
+  .stat .num{font-size:22px;font-weight:900;} .stat .lbl{font-size:12px;color:#64748b;}
+  .info-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee;font-size:14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;} th,td{padding:6px;} th{background:#f1f5fb;}
+  </style></head><body>${doc}</body></html>`);
+  w.document.close(); setTimeout(()=>w.print(),300);
 }
 
 /* ---------------- 底部導覽 ---------------- */
