@@ -296,7 +296,7 @@ const LineAdapter = {
    - 教練啟用後分享連結，選手用自己手機回報，教練後台看誰沒回報
    - GAS /exec 網址：優先用網址帶的 ?api=，其次 localStorage，其次內建常數
    ================================================================== */
-const GAS_API_DEFAULT = ''; // 部署後可把 /exec 網址填這裡（或在設定頁貼上）
+const GAS_API_DEFAULT = 'https://script.google.com/macros/s/AKfycbwpFq4icljhRzn8Ccm7Ji5BEAxN-4Hdsl5oE8DJAS0ihKLsQBx3jsNf2VVcINOFBtzRtg/exec'; // 已內建後端網址
 function getApiUrl(){
   const u=new URLSearchParams(location.search).get('api');
   if(u) return decodeURIComponent(u);

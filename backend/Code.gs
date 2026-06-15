@@ -45,6 +45,12 @@ function json(obj){
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// 統一日期格式：Sheet 可能把 'YYYY-MM-DD' 自動轉成 Date，讀回來要正規化
+function normDate(v){
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  return String(v);
+}
+
 /* ---------- GET：讀取（名單／回報狀況／單一學生）---------- */
 function doGet(e){
   try{
@@ -105,7 +111,7 @@ function getStatus(team, date){
   const reports = [];
   for (let i = 1; i < data.length; i++){
     const row = data[i];
-    if (row[1] === team && String(row[2]) === String(date)){
+    if (row[1] === team && normDate(row[2]) === String(date)){
       reportedMap[row[3]] = { name:row[3], attendance:row[4], body:row[5],
         sleep:row[6], fatigue:row[7], injury:row[8], water:row[10], kpiAvg:row[11], light:row[12] };
     }
@@ -124,7 +130,7 @@ function getStudent(team, name){
   for (let i = 1; i < data.length; i++){
     const row = data[i];
     if (row[1] === team && row[3] === name){
-      list.push({ date:String(row[2]), attendance:row[4], body:row[5], sleep:row[6],
+      list.push({ date:normDate(row[2]), attendance:row[4], body:row[5], sleep:row[6],
         fatigue:row[7], injury:row[8], water:row[10], kpiAvg:row[11], light:row[12], note:row[13] });
     }
   }
